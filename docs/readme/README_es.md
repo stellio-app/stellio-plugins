@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/stellio-app/stellio-plugins/actions"><img src="https://img.shields.io/github/actions/workflow/status/stellio-app/stellio-plugins/validate.yml?label=catalog" alt="Catalog check"></a>
-  <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
   <a href="https://github.com/stellio-app/stellio"><img src="https://img.shields.io/badge/for-Stellio-blueviolet.svg" alt="For Stellio"></a>
   <a href="https://github.com/stellio-app/stellio-plugins/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
 </p>
@@ -100,4 +100,4 @@ Para informar de un problema con un plugin listado, abra una issue en este repos
 
 ## 📜 Licencia
 
-Las herramientas de este repositorio se publican bajo la **licencia MIT** – véase [LICENSE](../../LICENSE). Cada plugin conserva la licencia elegida por su autor.
+El código de este repositorio – herramientas y plugins incluidos (como el visor de G-code) – se publica bajo la **GNU AGPL v3** – véase [LICENSE](../../LICENSE). Los plugins de terceros listados en el catálogo conservan la licencia elegida por su autor.

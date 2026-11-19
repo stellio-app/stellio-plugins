@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/stellio-app/stellio-plugins/actions"><img src="https://img.shields.io/github/actions/workflow/status/stellio-app/stellio-plugins/validate.yml?label=catalog" alt="Catalog check"></a>
-  <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
   <a href="https://github.com/stellio-app/stellio"><img src="https://img.shields.io/badge/for-Stellio-blueviolet.svg" alt="For Stellio"></a>
   <a href="https://github.com/stellio-app/stellio-plugins/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
 </p>
@@ -100,4 +100,4 @@
 
 ## 📜 ライセンス
 
-このリポジトリのツールは **MIT ライセンス**で公開されています – [LICENSE](../../LICENSE) を参照してください。各プラグインは作者が選んだライセンスのままです。
+このリポジトリのコード（ツールおよび同梱プラグイン。例：G-code ビューア）は **GNU AGPL v3** で公開されています – [LICENSE](../../LICENSE) を参照してください。カタログに掲載されるサードパーティのプラグインは、作者が選んだライセンスのままです。

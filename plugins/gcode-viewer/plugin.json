@@ -1,0 +1,17 @@
+{
+  "id": "gcode-viewer",
+  "name": "G-code viewer",
+  "version": "1.0.0",
+  "api": 1,
+  "description": "Mainsail-style 3D G-code viewer: layers, moves, colors by type/speed/flow, travel moves, retractions.",
+  "author": "Stellio",
+  "permissions": [
+    "ui",
+    "api:read"
+  ],
+  "ui": {
+    "title": "G-code viewer",
+    "icon": "fa-layer-group",
+    "entry": "viewer.html"
+  }
+}
