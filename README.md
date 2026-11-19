@@ -1,2 +1,3 @@
-# stellio-plugins
-Official catalog of Stellio plugins: logos, descriptions and links to plugins hosted by their authors.
+
+Stellio Plugins is the public catalog of extensions for Stellio, the file manager for 3D printing. A plugin is a small Python program that reacts to an event (print finished or failed, order late, printer overloaded): notifications, logging, home automation, data export…
+Plugins stay on their authors' GitHub; this repository only holds catalog.json, the list shown in Stellio under Tools › Plugins. To add yours, open a Pull Request (review rules and automatic validation included).
