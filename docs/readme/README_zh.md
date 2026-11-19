@@ -22,7 +22,7 @@
   <a href="README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">插件用于扩展 <a href="https://github.com/stellio-app/stellio">Stellio</a>——面向创客和 3D 打印机用户的 3D 文件管理器。本仓库保存在 <b>工具 › 插件</b> 中显示的公共列表。</p>
+<p align="center">插件用于扩展 <a href="https://github.com/stellio-app/stellio">Stellio</a>——面向创客和 3D 打印机用户的 3D 文件管理器。本仓库保存在 <b>插件 › 目录</b> 中显示的公共列表。</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 **插件**是一个小型 Python 程序，用于响应 Stellio 的事件（打印完成、打印失败、订单逾期、打印机过载）：发送通知、写入电子表格、打开灯、导出指标……
 
-插件由**作者托管在 GitHub 上**。本仓库只包含 [`catalog.json`](../../catalog.json)：每个插件的名称、描述、徽标，以及指向发布压缩包的链接和其 SHA-256 校验和。Stellio 读取此文件，并在 **工具 › 插件** 中以卡片（徽标 + 描述）形式显示。
+插件由**作者托管在 GitHub 上**。本仓库只包含 [`catalog.json`](../../catalog.json)：每个插件的名称、描述、徽标，以及指向发布压缩包的链接和其 SHA-256 校验和。Stellio 读取此文件，并在 **插件 › 目录** 中以卡片（徽标 + 描述）形式显示。
 
 ## 🚀 安装插件
 
-1. 在 Stellio 中打开 **工具 › 插件**（仅限所有者账户）。
+1. 在 Stellio 中打开 **插件 › 目录**（仅限所有者账户）。
 2. 浏览目录并点击 **安装**：Stellio 会下载压缩包并校验其 SHA-256 校验和。
 3. 阅读所请求的**权限**并予以接受。插件安装后处于**停用**状态。
 4. 启用后点击 **测试**，用测试事件运行它。运行日志会显示输出。

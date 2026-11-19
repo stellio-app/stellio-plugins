@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/stellio-app/stellio-plugins/actions"><img src="https://img.shields.io/github/actions/workflow/status/stellio-app/stellio-plugins/validate.yml?label=catalog" alt="Catalog check"></a>
-  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://github.com/stellio-app/stellio"><img src="https://img.shields.io/badge/for-Stellio-blueviolet.svg" alt="For Stellio"></a>
   <a href="https://github.com/stellio-app/stellio-plugins/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
 </p>
@@ -22,7 +22,7 @@
   <a href="docs/readme/README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">Plugins extend <a href="https://github.com/stellio-app/stellio">Stellio</a>, the 3D file manager for makers and 3D printer owners. This repository holds the public list shown in <b>Tools › Plugins</b>.</p>
+<p align="center">Plugins extend <a href="https://github.com/stellio-app/stellio">Stellio</a>, the 3D file manager for makers and 3D printer owners. This repository holds the public list shown in <b>Plugins › Catalog</b>.</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 A **plugin** is a small Python program that reacts to a Stellio event (print finished, print failed, order late, printer overload): send a notification, write to a spreadsheet, switch on a lamp, export metrics…
 
-Plugins are **hosted by their authors on GitHub**. This repository only contains [`catalog.json`](catalog.json): for each plugin, a name, a description, a logo and a link to a release archive with its SHA-256 checksum. Stellio reads this file and shows it as cards (logo + description) in **Tools › Plugins**.
+Plugins are **hosted by their authors on GitHub**. This repository only contains [`catalog.json`](catalog.json): for each plugin, a name, a description, a logo and a link to a release archive with its SHA-256 checksum. Stellio reads this file and shows it as cards (logo + description) in **Plugins › Catalog**.
 
 ## 🚀 Install a plugin
 
-1. In Stellio, open **Tools › Plugins** (owner account only).
+1. In Stellio, open **Plugins › Catalog** (owner account only).
 2. Browse the catalog and click **Install**: Stellio downloads the archive and checks its SHA-256 checksum.
 3. Read the **permissions** requested and accept them. The plugin is installed **disabled**.
 4. Enable it, then click **Test** to run it with a test event. The run log shows the output.

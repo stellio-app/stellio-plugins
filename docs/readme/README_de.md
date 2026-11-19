@@ -22,7 +22,7 @@
   <a href="README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">Plugins erweitern <a href="https://github.com/stellio-app/stellio">Stellio</a>, den 3D-Dateimanager für Maker und 3D-Drucker-Besitzer. Dieses Repository enthält die öffentliche Liste, die unter <b>Werkzeuge › Plugins</b> angezeigt wird.</p>
+<p align="center">Plugins erweitern <a href="https://github.com/stellio-app/stellio">Stellio</a>, den 3D-Dateimanager für Maker und 3D-Drucker-Besitzer. Dieses Repository enthält die öffentliche Liste, die unter <b>Plugins › Katalog</b> angezeigt wird.</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 Ein **Plugin** ist ein kleines Python-Programm, das auf ein Stellio-Ereignis reagiert (Druck beendet, Druck fehlgeschlagen, Auftrag verspätet, Drucker überlastet): eine Benachrichtigung senden, in eine Tabelle schreiben, eine Lampe einschalten, Metriken exportieren …
 
-Plugins werden **von ihren Autoren auf GitHub gehostet**. Dieses Repository enthält nur [`catalog.json`](../../catalog.json): zu jedem Plugin einen Namen, eine Beschreibung, ein Logo und einen Link zu einem Release-Archiv samt SHA-256-Prüfsumme. Stellio liest diese Datei und zeigt sie als Karten (Logo + Beschreibung) unter **Werkzeuge › Plugins** an.
+Plugins werden **von ihren Autoren auf GitHub gehostet**. Dieses Repository enthält nur [`catalog.json`](../../catalog.json): zu jedem Plugin einen Namen, eine Beschreibung, ein Logo und einen Link zu einem Release-Archiv samt SHA-256-Prüfsumme. Stellio liest diese Datei und zeigt sie als Karten (Logo + Beschreibung) unter **Plugins › Katalog** an.
 
 ## 🚀 Plugin installieren
 
-1. Öffnen Sie in Stellio **Werkzeuge › Plugins** (nur Besitzerkonto).
+1. Öffnen Sie in Stellio **Plugins › Katalog** (nur Besitzerkonto).
 2. Durchsuchen Sie den Katalog und klicken Sie auf **Installieren**: Stellio lädt das Archiv herunter und prüft seine SHA-256-Prüfsumme.
 3. Lesen Sie die angeforderten **Berechtigungen** und akzeptieren Sie sie. Das Plugin wird **deaktiviert** installiert.
 4. Aktivieren Sie es und klicken Sie auf **Test**, um es mit einem Testereignis auszuführen. Das Ausführungsprotokoll zeigt die Ausgabe.

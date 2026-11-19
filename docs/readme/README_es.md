@@ -22,7 +22,7 @@
   <a href="README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">Los plugins amplían <a href="https://github.com/stellio-app/stellio">Stellio</a>, el gestor de archivos 3D para makers y propietarios de impresoras 3D. Este repositorio contiene la lista pública que se muestra en <b>Herramientas › Plugins</b>.</p>
+<p align="center">Los plugins amplían <a href="https://github.com/stellio-app/stellio">Stellio</a>, el gestor de archivos 3D para makers y propietarios de impresoras 3D. Este repositorio contiene la lista pública que se muestra en <b>Plugins › Catálogo</b>.</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 Un **plugin** es un pequeño programa Python que reacciona a un evento de Stellio (impresión terminada, impresión fallida, pedido atrasado, impresora sobrecargada): enviar una notificación, escribir en una hoja de cálculo, encender una luz, exportar métricas…
 
-Los plugins los **alojan sus autores en GitHub**. Este repositorio solo contiene [`catalog.json`](../../catalog.json): para cada plugin, un nombre, una descripción, un logotipo y un enlace a un archivo de release con su suma SHA-256. Stellio lee este archivo y lo muestra como tarjetas (logotipo + descripción) en **Herramientas › Plugins**.
+Los plugins los **alojan sus autores en GitHub**. Este repositorio solo contiene [`catalog.json`](../../catalog.json): para cada plugin, un nombre, una descripción, un logotipo y un enlace a un archivo de release con su suma SHA-256. Stellio lee este archivo y lo muestra como tarjetas (logotipo + descripción) en **Plugins › Catálogo**.
 
 ## 🚀 Instalar un plugin
 
-1. En Stellio, abra **Herramientas › Plugins** (solo la cuenta propietaria).
+1. En Stellio, abra **Plugins › Catálogo** (solo la cuenta propietaria).
 2. Explore el catálogo y haga clic en **Instalar**: Stellio descarga el archivo y comprueba su suma SHA-256.
 3. Lea los **permisos** solicitados y acéptelos. El plugin se instala **desactivado**.
 4. Actívelo y pulse **Prueba** para lanzarlo con un evento de prueba. El registro de ejecuciones muestra la salida.

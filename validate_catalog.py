@@ -12,7 +12,7 @@ import hashlib, io, json, re, sys, urllib.request, zipfile
 ID_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{1,39}$')
 LANGS = ('fr', 'en', 'de', 'es', 'pt', 'it', 'zh', 'ja')
 MAX_ZIP, MAX_LOGO = 2 * 1024 * 1024, 200 * 1024
-PERMS = {'events', 'api:read', 'api:write', 'network'}
+PERMS = {'events', 'api:read', 'api:write', 'network', 'ui'}
 
 
 def sniff(b):

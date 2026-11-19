@@ -22,7 +22,7 @@
   <a href="README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">Les plugins étendent <a href="https://github.com/stellio-app/stellio">Stellio</a>, le gestionnaire de fichiers 3D pour les makers et propriétaires d'imprimantes 3D. Ce dépôt contient la liste publique affichée dans <b>Outils › Plugins</b>.</p>
+<p align="center">Les plugins étendent <a href="https://github.com/stellio-app/stellio">Stellio</a>, le gestionnaire de fichiers 3D pour les makers et propriétaires d'imprimantes 3D. Ce dépôt contient la liste publique affichée dans <b>Plugins › Catalogue</b>.</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 Un **plugin** est un petit programme Python qui réagit à un évènement de Stellio (impression terminée, impression échouée, commande en retard, imprimante en surcharge) : envoyer une notification, écrire dans un tableur, allumer une lampe, exporter des métriques…
 
-Les plugins sont **hébergés par leurs auteurs sur GitHub**. Ce dépôt contient seulement [`catalog.json`](../../catalog.json) : pour chaque plugin, un nom, une description, un logo et un lien vers une archive de release avec sa somme SHA-256. Stellio lit ce fichier et l'affiche sous forme de cartes (logo + description) dans **Outils › Plugins**.
+Les plugins sont **hébergés par leurs auteurs sur GitHub**. Ce dépôt contient seulement [`catalog.json`](../../catalog.json) : pour chaque plugin, un nom, une description, un logo et un lien vers une archive de release avec sa somme SHA-256. Stellio lit ce fichier et l'affiche sous forme de cartes (logo + description) dans **Plugins › Catalogue**.
 
 ## 🚀 Installer un plugin
 
-1. Dans Stellio, ouvrez **Outils › Plugins** (compte propriétaire uniquement).
+1. Dans Stellio, ouvrez **Plugins › Catalogue** (compte propriétaire uniquement).
 2. Parcourez le catalogue et cliquez sur **Installer** : Stellio télécharge l'archive et vérifie sa somme SHA-256.
 3. Lisez les **permissions** demandées et acceptez-les. Le plugin est installé **désactivé**.
 4. Activez-le, puis cliquez sur **Essai** pour le lancer avec un évènement de test. Le journal des exécutions affiche la sortie.

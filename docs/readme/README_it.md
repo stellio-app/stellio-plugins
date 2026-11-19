@@ -22,7 +22,7 @@
   <a href="README_ja.md">🇯🇵 日本語</a>
 </p>
 
-<p align="center">I plugin estendono <a href="https://github.com/stellio-app/stellio">Stellio</a>, il gestore di file 3D per maker e proprietari di stampanti 3D. Questo repository contiene l'elenco pubblico mostrato in <b>Strumenti › Plugin</b>.</p>
+<p align="center">I plugin estendono <a href="https://github.com/stellio-app/stellio">Stellio</a>, il gestore di file 3D per maker e proprietari di stampanti 3D. Questo repository contiene l'elenco pubblico mostrato in <b>Plugin › Catalogo</b>.</p>
 
 <p align="center">
   <a href="https://stellio-app.com/docs/"><b>📖 Documentation</b></a> &nbsp;·&nbsp; <a href="https://demo.stellio-app.com"><b>▶ Demo</b></a>
@@ -36,11 +36,11 @@
 
 Un **plugin** è un piccolo programma Python che reagisce a un evento di Stellio (stampa terminata, stampa fallita, ordine in ritardo, stampante in sovraccarico): inviare una notifica, scrivere in un foglio di calcolo, accendere una luce, esportare metriche…
 
-I plugin sono **ospitati dai loro autori su GitHub**. Questo repository contiene solo [`catalog.json`](../../catalog.json): per ogni plugin, un nome, una descrizione, un logo e un link a un archivio di release con la sua somma SHA-256. Stellio legge questo file e lo mostra come schede (logo + descrizione) in **Strumenti › Plugin**.
+I plugin sono **ospitati dai loro autori su GitHub**. Questo repository contiene solo [`catalog.json`](../../catalog.json): per ogni plugin, un nome, una descrizione, un logo e un link a un archivio di release con la sua somma SHA-256. Stellio legge questo file e lo mostra come schede (logo + descrizione) in **Plugin › Catalogo**.
 
 ## 🚀 Installare un plugin
 
-1. In Stellio, aprite **Strumenti › Plugin** (solo account proprietario).
+1. In Stellio, aprite **Plugin › Catalogo** (solo account proprietario).
 2. Sfogliate il catalogo e fate clic su **Installa**: Stellio scarica l'archivio e verifica la somma SHA-256.
 3. Leggete i **permessi** richiesti e accettateli. Il plugin viene installato **disattivato**.
 4. Attivatelo e fate clic su **Prova** per avviarlo con un evento di test. Il registro delle esecuzioni mostra l'output.
