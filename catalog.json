@@ -16,7 +16,7 @@
         "ja": "Mainsail 風の 3D G-code ビューア：レイヤー、移動、種類・速度・流量による色分け。"
       },
       "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.0/gcode-viewer-1.0.0.zip",
-      "sha256": "4ffef4d3fab136bd0af4ab4a8013d34b7102dabeaf861f74e077655f6a0f03c3",
+      "sha256": "40cec99c4f1cac6b723e5edda5687258bfb1e95e200d43c46217c6ff46093b23",
       "permissions": [
         "ui",
         "api:read"
