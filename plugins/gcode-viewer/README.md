@@ -5,7 +5,7 @@
 <details open>
 <summary><b>English</b></summary>
 
-Mainsail-style 3D G-code viewer for Stellio. Opens from the **Plugins** menu in the left bar.
+3D G-code viewer for Stellio. Opens from the **Plugins** menu in the left bar.
 
 - 3D view (orbit, pan, zoom, Iso/Top/Front/Side views)
 - Layer range sliders and a moves slider with playback (×0.25 to ×16)
@@ -23,7 +23,7 @@ License: GNU AGPL v3.
 <details>
 <summary><b>Français</b></summary>
 
-Visionneuse 3D de G-code façon Mainsail pour Stellio. S'ouvre depuis le menu **Plugins** de la barre de gauche.
+Visionneuse 3D de G-code pour Stellio. S'ouvre depuis le menu **Plugins** de la barre de gauche.
 
 - Vue 3D (rotation, déplacement, zoom, vues Iso/Dessus/Face/Côté)
 - Curseurs de plage de couches et curseur de mouvements avec lecture (×0,25 à ×16)
@@ -41,7 +41,7 @@ Licence : GNU AGPL v3.
 <details>
 <summary><b>Deutsch</b></summary>
 
-3D-G-Code-Viewer im Mainsail-Stil für Stellio. Wird über das Menü **Plugins** in der linken Leiste geöffnet.
+3D-G-Code-Viewer für Stellio. Wird über das Menü **Plugins** in der linken Leiste geöffnet.
 
 - 3D-Ansicht (Drehen, Verschieben, Zoom, Ansichten Iso/Oben/Vorne/Seite)
 - Regler für den Schichtbereich und für Bewegungen mit Wiedergabe (×0,25 bis ×16)
@@ -59,7 +59,7 @@ Lizenz: GNU AGPL v3.
 <details>
 <summary><b>Español</b></summary>
 
-Visor 3D de G-code al estilo Mainsail para Stellio. Se abre desde el menú **Plugins** de la barra izquierda.
+Visor 3D de G-code para Stellio. Se abre desde el menú **Plugins** de la barra izquierda.
 
 - Vista 3D (rotar, desplazar, zoom, vistas Iso/Superior/Frontal/Lateral)
 - Controles de rango de capas y de movimientos con reproducción (×0,25 a ×16)
@@ -77,7 +77,7 @@ Licencia: GNU AGPL v3.
 <details>
 <summary><b>Português</b></summary>
 
-Visualizador 3D de G-code ao estilo Mainsail para o Stellio. Abre-se a partir do menu **Plugins** da barra esquerda.
+Visualizador 3D de G-code para o Stellio. Abre-se a partir do menu **Plugins** da barra esquerda.
 
 - Vista 3D (rodar, deslocar, zoom, vistas Iso/Topo/Frente/Lado)
 - Controlos do intervalo de camadas e dos movimentos com reprodução (×0,25 a ×16)
@@ -95,7 +95,7 @@ Licença: GNU AGPL v3.
 <details>
 <summary><b>Italiano</b></summary>
 
-Visualizzatore 3D di G-code in stile Mainsail per Stellio. Si apre dal menu **Plugins** della barra a sinistra.
+Visualizzatore 3D di G-code per Stellio. Si apre dal menu **Plugins** della barra a sinistra.
 
 - Vista 3D (rotazione, spostamento, zoom, viste Iso/Alto/Fronte/Lato)
 - Cursori per l'intervallo di strati e per i movimenti con riproduzione (×0,25 – ×16)
@@ -113,7 +113,7 @@ Licenza: GNU AGPL v3.
 <details>
 <summary><b>中文</b></summary>
 
-适用于 Stellio 的 Mainsail 风格 3D G-code 查看器。从左侧栏的 **Plugins** 菜单打开。
+适用于 Stellio 的 3D G-code 查看器。从左侧栏的 **Plugins** 菜单打开。
 
 - 3D 视图（旋转、平移、缩放，Iso/顶视/前视/侧视）
 - 层范围滑块和带播放的移动滑块（×0.25 至 ×16）
@@ -131,7 +131,7 @@ Licenza: GNU AGPL v3.
 <details>
 <summary><b>日本語</b></summary>
 
-Stellio 用の Mainsail 風 3D G-code ビューア。左バーの **Plugins** メニューから開きます。
+Stellio 用の 3D G-code ビューア。左バーの **Plugins** メニューから開きます。
 
 - 3D 表示（回転・移動・ズーム、Iso/上面/正面/側面ビュー）
 - レイヤー範囲スライダーと、再生付きの移動スライダー（×0.25〜×16）

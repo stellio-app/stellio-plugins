@@ -15,12 +15,14 @@
   #files { width: 250px; flex: none; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
   #files.off { display: none; }
   #stage.drag::after { content: attr(data-drop); position: absolute; inset: 8px; border: 2px dashed var(--accent); border-radius: 14px; display: grid; place-items: center; font-size: 16px; background: color-mix(in srgb, var(--bg) 80%, transparent); pointer-events: none; z-index: 9; }
+  #pick { width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; }
   #q { margin: 10px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
   #list { overflow: auto; flex: 1; padding: 0 8px 10px; }
   .item { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 7px 10px; border-radius: 8px; cursor: pointer; }
   .item:hover { background: var(--card); }
   .item.on { background: var(--accent); color: #fff; }
-  .item small { display: block; color: var(--muted); }
+  .item span, .item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item small { color: var(--muted); }
   .item.on small { color: rgba(255,255,255,.82); }
   /* scène */
   #main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -381,7 +383,7 @@
   function renderList() {
     var q = $('q').value.trim().toLowerCase(), box = $('list'); box.textContent = '';
     files.filter(function (f) { return !q || f.name.toLowerCase().indexOf(q) >= 0; }).forEach(function (f) {
-      var b = document.createElement('button'); b.className = 'item' + (cur && cur.id === f.id ? ' on' : ''); b.type = 'button'; b.textContent = f.name;
+      var b = document.createElement('button'); b.className = 'item' + (cur && cur.id === f.id ? ' on' : ''); b.type = 'button'; b.title = f.name; var nm = document.createElement('span'); nm.textContent = f.name; b.appendChild(nm);
       var s = document.createElement('small'); s.textContent = fmt(f.size || 0) + (f.project_name ? ' · ' + f.project_name : ''); b.appendChild(s); b.onclick = function () { open(f); }; box.appendChild(b);
     });
   }

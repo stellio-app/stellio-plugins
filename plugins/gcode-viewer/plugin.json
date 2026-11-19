@@ -1,9 +1,18 @@
 {
   "id": "gcode-viewer",
   "name": "G-code viewer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "api": 1,
-  "description": "Mainsail-style 3D G-code viewer: layers, moves, colors by type/speed/flow, travel moves, retractions.",
+  "description": {
+    "fr": "Visionneuse de G-code.",
+    "en": "G-code viewer.",
+    "de": "G-Code-Viewer.",
+    "es": "Visor de G-code.",
+    "pt": "Visualizador de G-code.",
+    "it": "Visualizzatore di G-code.",
+    "zh": "G-code 查看器。",
+    "ja": "G-code ビューア。"
+  },
   "author": "Stellio",
   "permissions": [
     "ui",

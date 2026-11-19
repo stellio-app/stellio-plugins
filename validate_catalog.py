@@ -43,7 +43,8 @@ def check_entry(e, offline):
         elif 'en' not in d and 'fr' not in d: errs.append('description : fournir au moins « en » ou « fr »')
         txt = ' '.join(d.values())
     elif isinstance(d, str) and d.strip(): txt = d
-    else: errs.append('description manquante'); txt = ''
+    elif e.get('description') is None and (e.get('manifest') or str(e.get('homepage', '')).startswith('https://github.com/')): txt = ''     # description lue dans le plugin.json sur GitHub
+    else: errs.append('description manquante (ou homepage GitHub / champ « manifest » pour la lire dans plugin.json)'); txt = ''
     if any(len(v) > 200 for v in (d.values() if isinstance(d, dict) else [txt])): errs.append('description trop longue (200 caractères maximum, 140 conseillés)')
     if not re.match(r'^https://', str(e.get('url', ''))): errs.append('url https requise')
     if not re.match(r'^[0-9a-f]{64}$', str(e.get('sha256', '')).lower()): errs.append('sha256 : 64 caractères hexadécimaux')

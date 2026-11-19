@@ -3,20 +3,10 @@
     {
       "id": "gcode-viewer",
       "name": "G-code viewer",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Stellio",
-      "description": {
-        "fr": "Visionneuse G-code 3D façon Mainsail : couches, mouvements, couleurs par type, vitesse ou débit.",
-        "en": "Mainsail-style 3D G-code viewer: layers, moves, colors by type, speed or flow.",
-        "de": "3D-G-Code-Viewer im Mainsail-Stil: Schichten, Bewegungen, Farben nach Typ, Tempo oder Fluss.",
-        "es": "Visor 3D de G-code al estilo Mainsail: capas, movimientos, colores por tipo, velocidad o flujo.",
-        "pt": "Visualizador 3D de G-code ao estilo Mainsail: camadas, movimentos, cores por tipo, velocidade ou fluxo.",
-        "it": "Visualizzatore 3D di G-code in stile Mainsail: strati, movimenti, colori per tipo, velocità o flusso.",
-        "zh": "Mainsail 风格的 3D G-code 查看器：层、移动，按类型、速度或流量着色。",
-        "ja": "Mainsail 風の 3D G-code ビューア：レイヤー、移動、種類・速度・流量による色分け。"
-      },
-      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.0/gcode-viewer-1.0.0.zip",
-      "sha256": "40cec99c4f1cac6b723e5edda5687258bfb1e95e200d43c46217c6ff46093b23",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.1/gcode-viewer-1.0.1.zip",
+      "sha256": "cca882a9ffc17219c996a4025107fd758c11261855e1db5d722b7255b81bf93b",
       "permissions": [
         "ui",
         "api:read"
