@@ -3,10 +3,11 @@
     {
       "id": "gcode-viewer",
       "name": "G-code viewer",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": "Stellio",
-      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.1/gcode-viewer-1.0.1.zip",
-      "sha256": "cca882a9ffc17219c996a4025107fd758c11261855e1db5d722b7255b81bf93b",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.2/gcode-viewer-1.0.2.zip",
+      "sha256": "449ae0eb8a66206c445c43f9c6cbbd3c28c316bd06cbf78667d0547fab95b18d",
+      "signature": "b0dafb2734caa00a3403fbf9ec7c885d82853ef114a40cd06f13004cec97567f8be5c67c44246849c431ad26737bd3434e276acb964437566336b2c284c6300a",
       "permissions": [
         "ui",
         "api:read"
