@@ -14,6 +14,22 @@
       ],
       "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/gcode-viewer/logo.png",
       "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/gcode-viewer"
+    },
+    {
+      "id": "split-color",
+      "name": "Split by color",
+      "version": "1.0.0",
+      "author": "Stellio",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/split-color-1.0.0/split-color-1.0.0.zip",
+      "sha256": "727fc3bc79315b91b7bad5936474f8166e959a4262c41bddf9be7844354634e7",
+      "signature": "7c3ede239fe872f261193374ff5c7117726230c4364c088169ae6f545f03457e3616edd3e1504106400b1a5c9cd746e1b5f3a1afeb8632b8c4586cfccd06590e",
+      "permissions": [
+        "ui",
+        "api:read",
+        "api:write"
+      ],
+      "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/split-color/logo.png",
+      "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/split-color"
     }
   ]
 }
