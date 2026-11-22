@@ -744,6 +744,54 @@ def _trim_rim(v, f, max_frac=0.02, max_faces=250000):
     return _unsolid(above), -n
 
 
+def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=25.0):
+    """Deux pièces de couleurs différentes qui s'interpénètrent (œuf dans l'orbite, corne dans la tête…), taillées COMME AU CUTTER :
+    la petite pièce est tranchée par un plan plat à sa base (la partie enfouie, cachée, est supprimée) ; la grande est creusée de la forme de ce
+    qui reste (agrandie du jeu), avec un fond plan. Au contact : un plan et les parois lisses de la petite pièce, jamais la texture de l'autre.
+    Renvoie ({région creusée ou tranchée}, {région tranchée : direction de sa face plane}) ; solids est mis à jour."""
+    orig = dict(solids)
+    ids = sorted(orig)
+    boxes = {r: orig[r].bounding_box() for r in ids}
+    touched, down = [], {}
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            if region_color[a] == region_color[b] or not _bbox_overlap(boxes[a], boxes[b]):
+                continue
+            inter = orig[a] ^ orig[b]
+            if inter.volume() < min_volume:
+                continue
+            small, big = (a, b) if orig[a].volume() <= orig[b].volume() else (b, a)
+            pts = np.array(inter.to_mesh().vert_properties[:, :3], dtype=float)
+            c = pts.mean(axis=0)
+            sm = np.array(solids[small].to_mesh().vert_properties[:, :3], dtype=float)
+            n = sm.mean(axis=0) - c                          # sens dans lequel la petite pièce sort de la grande
+            if np.linalg.norm(n) < 1e-3:
+                continue
+            n = n / np.linalg.norm(n)
+            pr = (pts - c) @ n
+            level = float(np.dot(n, c)) + float(pr.min() + depth_pct / 100.0 * (pr.max() - pr.min()))     # plan à 25 % de l'épaisseur enfouie
+            top, _bottom = solids[small].split_by_plane(n.tolist(), level)
+            if top.is_empty() or top.volume() < 0.3 * solids[small].volume():
+                top = solids[small]                          # trop peu de matière au-dessus du plan : on garde la pièce entière
+            else:
+                solids[small] = top
+                down[small] = -n                             # face plane de la petite pièce = dessous (vers le plateau)
+                if small not in touched:
+                    touched.append(small)
+            bb = np.asarray(top.bounding_box(), dtype=float)
+            ctr = (bb[:3] + bb[3:]) / 2.0
+            half = float(((bb[3:] - bb[:3]) / 2.0).min())
+            f = 1.0 + clearance / max(half, 0.5)
+            cutter = top.translate((-ctr).tolist()).scale((f, f, f)).translate(ctr.tolist())
+            res = solids[big] - cutter
+            if res.is_empty() or res.volume() < 0.2 * solids[big].volume():
+                continue
+            solids[big] = res
+            if big not in touched:
+                touched.append(big)
+    return touched, down
+
+
 def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
     """Découpe en régions, répare chacune, ajoute les connecteurs demandés, regroupe les morceaux voisins d'une même couleur,
     puis range chaque couleur sur son plateau. Renvoie (objets par couleur {k: [objets]}, bilan de réparation, tient, connecteurs)."""
@@ -781,6 +829,7 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
         for k in stats:
             stats[k] += st[k]
         shells[r] = (v, f)
+    fixed_orient = set(orient)
     for r in list(shells):
         if r in orient:
             continue
@@ -791,25 +840,32 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
             res = None
         if res:
             shells[r], orient[r] = res
-    conn = {'made': 0, 'skipped': 0, 'error': None}
-    if spec and len(region_color) > 1:
+    conn = {'made': 0, 'skipped': 0, 'error': None, 'seats': 0}
+    if len(region_color) > 1:
         try:
             solids = {}
             for r, (v, f) in shells.items():
                 m = _solid(v, f)
                 if m is not None:
                     solids[r] = m
-            made0, skipped0 = 0, 0                         # pas d'entaille des corps qui se chevauchent : leurs formes d'origine restent lisses
-            joints = _joints(f_ids, region, coords)
-            centers = verts[faces].mean(axis=1)
-            made, skipped = add_connectors(solids, joints, centers, **spec)
-            conn.update(made=made0 + made, skipped=skipped0 + skipped)
-            for r, m in solids.items():
-                shells[r] = _unsolid(m)
+            carved, sdown = carve_seats(solids, region_color)   # coupes au cutter : base plane de la petite pièce, logement à fond plan dans la grande
+            conn['seats'] = len(carved)
+            changed = set(carved)
+            for r, d in sdown.items():
+                if r not in fixed_orient:
+                    orient[r] = d
+            if spec:
+                joints = _joints(f_ids, region, coords)
+                centers = verts[faces].mean(axis=1)
+                made, skipped = add_connectors(solids, joints, centers, **spec)
+                conn.update(made=made, skipped=skipped)
+                changed = set(solids)
+            for r in changed:
+                shells[r] = _unsolid(solids[r])
         except ImportError:
             conn['error'] = 'manifold3d'
         except Exception as e:
-            app_logger.warning(f"[Séparation couleur] connecteurs impossibles : {e}")
+            app_logger.warning(f"[Séparation couleur] logements/connecteurs impossibles : {e}")
             conn['error'] = str(e)
     per_color, fits = {}, True
     for k in range(len(colors)):
