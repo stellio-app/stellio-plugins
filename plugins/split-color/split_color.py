@@ -5,6 +5,7 @@ La pièce garde sa position sur chaque plateau et chaque objet porte sa couleur.
 Plugin du catalogue qui déclare `host` : il s'exécute DANS Stellio, donc n'est installé que signé par une clé de confiance (voir docs/plugins.md).
 Routes dans l'espace réservé aux plugins : /api/x/split-color/… ; page : split.html (cadre isolé, écriture via le pont `stellio.api(..., 'json', {method:'POST'})`).
 """
+import base64
 import io
 import math
 import os
@@ -267,6 +268,36 @@ def split_mesh_by_color(mesh, face_rgb, tolerance=0.0):
     return out
 
 
+def _preview(pieces, max_tris=30000):
+    """Aperçu léger pour la page : triangles de chaque couleur, recentrés et quantifiés en entiers 16 bits (base64).
+    Au-delà de `max_tris` au total, chaque couleur est échantillonnée régulièrement (le rendu reste fidèle à l'échelle d'une vignette)."""
+    import numpy as np
+    allv = np.vstack([np.asarray(p['vertices'], dtype=float) for p in pieces])
+    lo, hi = allv.min(axis=0), allv.max(axis=0)
+    center = np.array([(lo[0] + hi[0]) / 2.0, (lo[1] + hi[1]) / 2.0, lo[2]])
+    half = max(float(np.max(hi - lo)) / 2.0, 1e-6)
+    q = 12000.0 / half
+    total = sum(len(p['faces']) for p in pieces) or 1
+    out = []
+    for p in pieces:
+        f = np.asarray(p['faces'])
+        v = np.asarray(p['vertices'], dtype=float)
+        budget = max(300, int(max_tris * len(f) / total))
+        if len(f) > budget:
+            f = f[np.linspace(0, len(f) - 1, budget).astype(int)]
+        tri = np.clip(np.round((v[f] - center) * q), -32000, 32000).astype('<i2')
+        out.append({"hex": _hex(p['rgb']), "tris": base64.b64encode(tri.tobytes()).decode('ascii')})
+    return {"q": q, "extent": [float(x) for x in (hi - lo)], "pieces": out}
+
+
+def _preview_or_none(pieces):
+    try:
+        return _preview(pieces)
+    except Exception as e:
+        app_logger.warning(f"[Séparation couleur] aperçu indisponible : {e}")
+        return None
+
+
 def api_split_color_3mf():
     data = request.json or {}
     path = data.get('path')
@@ -306,7 +337,7 @@ def api_split_color_3mf():
         return jsonify({"error": f"Trop de couleurs distinctes ({len(pieces)}, maximum {MAX_COLORS}) : augmentez la tolérance de regroupement",
                         "colors": colors[:MAX_COLORS], "color_count": len(pieces)}), 400
     if data.get('dry_run'):
-        return jsonify({"color_count": len(pieces), "colors": colors}), 200
+        return jsonify({"color_count": len(pieces), "colors": colors, "preview": _preview_or_none(pieces) if len(pieces) > 1 else None}), 200
     if len(pieces) < 2:
         return jsonify({"error": "Une seule couleur détectée : rien à séparer", "colors": colors, "color_count": len(pieces)}), 400
 
@@ -341,6 +372,7 @@ def api_split_color_3mf():
         "output_filename": os.path.basename(_unc(out_path)),
         "plate_count": len(plates),
         "colors": colors,
+        "preview": _preview_or_none(pieces),
         "too_big": not fits,
     }), 200
 
