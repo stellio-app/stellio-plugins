@@ -18,11 +18,11 @@
     {
       "id": "split-color",
       "name": "Split by color",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": "Stellio",
-      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/split-color-1.0.2/split-color-1.0.2.zip",
-      "sha256": "187e3635177fcedb4fa75133e40a7132845d765cb88b1521c1fb44fce7deeec4",
-      "signature": "e708d0eb78b37c584a0f4cb7569610a115e6644a992f39be2d7c183dcb5c6db18201a73aad857b48e02ab5a1a7d609b5ec24ee7f03d052a689398493f8f3810a",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/split-color-1.0.3/split-color-1.0.3.zip",
+      "sha256": "b8b9fd8272fcae1d8c1d03246ca87b84d6df89acac8ef719d20e71726b0f33e3",
+      "signature": "8bf1ff08e146eb5e27f9fc9167c430e769a4efaf6263ece0c31b86fbc544f97ede5ebab5a96f0fa8b73c36dd78720e06d47794b2092d90cc389c1ae30f8e3104",
       "permissions": [
         "ui",
         "api:read",
