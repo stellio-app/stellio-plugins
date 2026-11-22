@@ -30,7 +30,7 @@ _REQUIRED = (
     'session',
     'smbclient',
 )
-_OPTIONAL = ('CACHE_FILE', '_read_cache_json_safe')
+_OPTIONAL = ('CACHE_FILE', '_read_cache_json_safe', '_wv_dialog')
 _OVERRIDABLE = ("os", )
 
 _MAIN = {}
@@ -51,6 +51,7 @@ session = None
 smbclient = None
 CACHE_FILE = None
 _read_cache_json_safe = None
+_wv_dialog = None
 
 PLATE_GAP = 0.2   # écart logique entre plateaux dans l'espace Bambu (20 % de la taille du plateau)
 MAX_COLORS = 24
@@ -73,12 +74,715 @@ def _safe_name(path):
     return re.sub(r'[\x00-\x1f<>]', '', base).strip() or 'piece'
 
 
+def _repair_core(vertices, faces, max_loops=4000):
+    """Répare un maillage avant livraison : soude les sommets, retire les faces dégénérées ou en double, referme les trous
+    (chaque bord ouvert est comblé par un éventail depuis son centre, dans le bon sens), oriente le volume vers l'extérieur.
+    Renvoie (sommets, faces, {'filled': trous refermés, 'open': arêtes encore ouvertes, 'nonmanifold': arêtes partagées par > 2 faces})."""
+    v = np.asarray(vertices, dtype=float)
+    f = np.asarray(faces, dtype=np.int64).reshape(-1, 3)
+    if len(f) == 0:
+        return v, f, {'filled': 0, 'open': 0, 'nonmanifold': 0}
+    uniq, inv = np.unique(np.round(v, 4), axis=0, return_inverse=True)
+    f = np.asarray(inv).reshape(-1)[f]
+    v = uniq
+    f = f[(f[:, 0] != f[:, 1]) & (f[:, 1] != f[:, 2]) & (f[:, 0] != f[:, 2])]
+    if len(f):
+        _, first = np.unique(np.sort(f, axis=1), axis=0, return_index=True)
+        f = f[np.sort(first)]
+        area = np.linalg.norm(np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]]), axis=1)
+        f = f[area > 1e-12]
+    de = {}
+    for a, b, c in f.tolist():
+        for e in ((a, b), (b, c), (c, a)):
+            de[e] = de.get(e, 0) + 1
+    nxt = {}
+    for (a, b), n in de.items():
+        if (b, a) not in de:
+            nxt.setdefault(b, []).append(a)       # bord ouvert a→b : le comblement le parcourt dans le sens b→a
+    new_v, new_f, filled = [], [], 0
+    base = len(v)
+    while nxt and filled < max_loops:
+        start = next(iter(nxt))
+        loop, cur = [start], start
+        while True:
+            outs = nxt.get(cur)
+            if not outs:
+                loop = None
+                break
+            nx = outs.pop()
+            if not outs:
+                del nxt[cur]
+            if nx == start:
+                break
+            loop.append(nx)
+            cur = nx
+            if len(loop) > 200000:
+                loop = None
+                break
+        if loop is None or len(loop) < 3:
+            nxt.pop(start, None)
+            continue
+        if len(loop) == 3:
+            new_f.append(loop)
+        else:
+            c = v[loop].mean(axis=0)
+            ci = base + len(new_v)
+            new_v.append(c)
+            for i in range(len(loop)):
+                new_f.append([ci, loop[i], loop[(i + 1) % len(loop)]])
+        filled += 1
+    if new_v:
+        v = np.vstack([v, np.asarray(new_v)])
+    if new_f:
+        f = np.vstack([f, np.asarray(new_f, dtype=np.int64)])
+    if len(f):
+        tri = v[f]
+        vol = float(np.einsum('ij,ij->', tri[:, 0], np.cross(tri[:, 1], tri[:, 2])) / 6.0)
+        if vol < 0:
+            f = f[:, ::-1].copy()
+    cnt = {}
+    for a, b, c in f.tolist():
+        for e in ((a, b), (b, c), (c, a)):
+            k = e if e[0] < e[1] else (e[1], e[0])
+            cnt[k] = cnt.get(k, 0) + 1
+    return v, f, {'filled': filled, 'open': sum(1 for n in cnt.values() if n == 1), 'nonmanifold': sum(1 for n in cnt.values() if n > 2)}
+
+
+def _edge_stats(v, f):
+    cnt = {}
+    for a, b, c in np.asarray(f).tolist():
+        for e in ((a, b), (b, c), (c, a)):
+            k = e if e[0] < e[1] else (e[1], e[0])
+            cnt[k] = cnt.get(k, 0) + 1
+    return {'open': sum(1 for n in cnt.values() if n == 1), 'nonmanifold': sum(1 for n in cnt.values() if n > 2)}
+
+
+def _repair_mesh(vertices, faces, max_loops=4000):
+    """Répare un maillage (voir _repair_core) puis, s'il reste des arêtes ouvertes ou partagées par plus de 2 faces (contours pincés
+    de surfaces peintes), termine avec pymeshfix (livré avec Stellio) : le résultat est un volume fermé, orienté vers l'extérieur."""
+    v, f, st = _repair_core(vertices, faces, max_loops)
+    if (st['open'] or st['nonmanifold']) and len(f) >= 4:
+        try:
+            import pymeshfix
+            mf = pymeshfix.MeshFix(np.ascontiguousarray(v, dtype=float), np.ascontiguousarray(f, dtype=np.int32))
+            mf.repair(joincomp=False, remove_smallest_components=False)
+            v2, f2 = np.asarray(mf.points, dtype=float), np.asarray(mf.faces, dtype=np.int64).reshape(-1, 3)
+            if len(f2) >= 4:
+                tri = v2[f2]
+                if float(np.einsum('ij,ij->', tri[:, 0], np.cross(tri[:, 1], tri[:, 2])) / 6.0) < 0:
+                    f2 = f2[:, ::-1].copy()
+                es = _edge_stats(v2, f2)
+                if es['open'] + es['nonmanifold'] < st['open'] + st['nonmanifold']:
+                    v, f = v2, f2
+                    st = {'filled': st['filled'], 'open': es['open'], 'nonmanifold': es['nonmanifold']}
+        except Exception as e:
+            try:
+                app_logger.info(f"[Séparation couleur] pymeshfix indisponible : {e}")
+            except Exception:
+                pass
+    return v, f, st
+
+
+def _components(faces):
+    """Composantes connexes d'un maillage (faces reliées par un sommet commun) : liste de tableaux d'indices de faces."""
+    f = np.asarray(faces, dtype=np.int64).reshape(-1, 3)
+    n = int(f.max()) + 1 if len(f) else 0
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    for a, b, c in f.tolist():
+        ra, rb, rc = find(a), find(b), find(c)
+        if ra != rb:
+            parent[rb] = ra
+        if find(rc) != find(ra):
+            parent[find(rc)] = find(ra)
+    roots = np.array([find(int(x)) for x in f[:, 0]], dtype=np.int64) if len(f) else np.zeros(0, dtype=np.int64)
+    out = []
+    for r in np.unique(roots):
+        out.append(np.nonzero(roots == r)[0])
+    return out
+
+
+def _pack(sizes, bed_w, gap=6.0):
+    """Range des rectangles (largeur, profondeur) en rangées, sans chevauchement. Renvoie ([(x, y) coin bas-gauche], largeur, profondeur) ;
+    l'ensemble est ensuite centré sur le plateau par l'appelant."""
+    order = sorted(range(len(sizes)), key=lambda i: -sizes[i][1])
+    limit = max(bed_w * 0.9, max((s[0] for s in sizes), default=0))
+    pos = [None] * len(sizes)
+    x = y = row_h = total_w = 0.0
+    for i in order:
+        w, d = sizes[i]
+        if x > 0 and x + w > limit:
+            x, y, row_h = 0.0, y + row_h + gap, 0.0
+        pos[i] = (x, y)
+        x += w + gap
+        row_h = max(row_h, d)
+        total_w = max(total_w, x - gap)
+    return pos, total_w, y + row_h
+
+
+def _rot_to_down(d):
+    """Rotation envoyant le vecteur unitaire d vers -z."""
+    d = np.asarray(d, dtype=float)
+    d = d / (np.linalg.norm(d) or 1.0)
+    t = np.array([0.0, 0.0, -1.0])
+    c = float(np.dot(d, t))
+    if c > 0.999999:
+        return np.eye(3)
+    if c < -0.999999:
+        return np.diag([1.0, -1.0, -1.0])
+    ax = np.cross(d, t)
+    k = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+    return np.eye(3) + k + k @ k / (1.0 + c)
+
+
+def _overhang_area(v, f, R):
+    """Aire (mm²) des faces en surplomb (> 45°) une fois la pièce tournée par R et posée à z = 0 ; la face posée sur le plateau n'en fait pas partie."""
+    w = v @ R.T
+    z0 = w[:, 2].min()
+    tri = w[f]
+    nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    ar = np.linalg.norm(nrm, axis=1) / 2.0
+    nz = nrm[:, 2] / (2.0 * ar + 1e-12)
+    low = tri[:, :, 2].max(axis=1) - z0 < 0.2
+    return float(ar[(nz < -0.7071) & ~low].sum())
+
+
+def _orient_for_print(v, f):
+    """Pose la pièce sur sa meilleure face (plus grande face plane de l'enveloppe convexe) si cela réduit nettement les surplombs
+    (donc les supports) ; sinon elle garde son orientation d'origine. Renvoie les sommets tournés."""
+    try:
+        from scipy.spatial import ConvexHull
+        pts = v[np.unique(f)]
+        hull = ConvexHull(pts[::max(1, len(pts) // 60000)])
+        eq = hull.equations
+        simp = hull.simplices
+        tri = pts[::max(1, len(pts) // 60000)][simp]
+        area = np.linalg.norm(np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]), axis=1) / 2.0
+        cand, seen = [], []
+        for i in np.argsort(-area):
+            n = eq[i, :3]
+            if any(np.dot(n, q) > 0.985 for q in seen):
+                continue
+            seen.append(n)
+            cand.append(n)
+            if len(cand) >= 8:
+                break
+        base = _overhang_area(v, f, np.eye(3))
+        best, best_s = np.eye(3), base
+        for n in cand:
+            R = _rot_to_down(-n)
+            sc = _overhang_area(v, f, R)
+            if sc < best_s:
+                best, best_s = R, sc
+        if best_s < 0.7 * base:
+            return v @ best.T
+    except Exception:
+        pass
+    return v
+
+
+def _arrange(shells, bed_w, bed_d):
+    """shells = [(sommets, faces)] d'une couleur → objets prêts pour son plateau : chaque morceau est posé sur le plateau (z = 0) et rangé
+    près du centre, sans chevauchement. Renvoie (objets, tient_sur_le_plateau)."""
+    items = []
+    for v, f in shells:
+        v = _orient_for_print(v, f)
+        lo, hi = v.min(axis=0), v.max(axis=0)
+        items.append((v - np.array([(lo[0] + hi[0]) / 2.0, (lo[1] + hi[1]) / 2.0, lo[2]]), f, float(hi[0] - lo[0]), float(hi[1] - lo[1])))
+    pos, tw, td = _pack([(w, d) for _v, _f, w, d in items], bed_w)
+    objs = []
+    for (v, f, w, d), (px, py) in zip(items, pos):
+        objs.append({'vertices': v, 'faces': f, 'cx': bed_w / 2.0 + px + w / 2.0 - tw / 2.0, 'cy': bed_d / 2.0 + py + d / 2.0 - td / 2.0})
+    return objs, tw <= bed_w and td <= bed_d
+
+
+def _drop_pieces(piece, bed_w, bed_d):
+    """Une couleur (maillage éventuellement en plusieurs morceaux) → objets réparés, posés au sol et rangés. Renvoie (objets, bilan de réparation, tient)."""
+    v0 = np.asarray(piece['vertices'], dtype=float)
+    f0 = np.asarray(piece['faces'], dtype=np.int64).reshape(-1, 3)
+    stats = {'filled': 0, 'open': 0, 'nonmanifold': 0}
+    shells = []
+    for idx in _components(f0):
+        if len(idx) < 4:
+            continue
+        used, inv = np.unique(f0[idx], return_inverse=True)
+        v, f, st = _repair_mesh(v0[used], inv.reshape(-1, 3))
+        for k in stats:
+            stats[k] += st[k]
+        shells.append((v, f))
+    if not shells:
+        shells = [(v0, f0)]
+    objs, ok = _arrange(shells, bed_w, bed_d)
+    return objs, stats, ok
+
+
+# ── Connecteurs d'emboîtement : un tenon sur la plus petite pièce, le trou correspondant (avec du jeu) dans celle qui la reçoit ──
+
+def _solid(v, f):
+    """Manifold (manifold3d, livré avec Stellio) d'un maillage fermé ; None s'il n'est pas utilisable."""
+    from manifold3d import Manifold, Mesh
+    m = Manifold(Mesh(vert_properties=np.ascontiguousarray(v, dtype=np.float32), tri_verts=np.ascontiguousarray(f, dtype=np.uint32)))
+    return None if (m.is_empty() or not str(m.status()).endswith('NoError')) else m
+
+
+def _unsolid(m):
+    mesh = m.to_mesh()
+    return np.array(mesh.vert_properties[:, :3], dtype=float), np.array(mesh.tri_verts, dtype=np.int64)
+
+
+def _regions(mesh, labels):
+    """Régions = morceaux d'une même couleur, d'un seul tenant. Renvoie (région par face, couleur de chaque région, sommets soudés par face, coordonnées soudées)."""
+    verts = np.asarray(mesh.vertices, dtype=float)
+    faces = np.asarray(mesh.faces)
+    uniq, inv = np.unique(np.round(verts, 4), axis=0, return_inverse=True)
+    f_ids = np.asarray(inv).reshape(-1)[faces]
+    region = np.full(len(faces), -1, dtype=np.int64)
+    colors = []
+    for k in range(int(labels.max()) + 1 if len(labels) else 0):
+        idx = np.nonzero(labels == k)[0]
+        if not len(idx):
+            continue
+        for comp in _components(f_ids[idx]):
+            if len(comp) < 4:
+                continue
+            region[idx[comp]] = len(colors)
+            colors.append(k)
+    return region, colors, f_ids, uniq
+
+
+def _joints(f_ids, region, coords):
+    """Contacts entre régions voisines : liste de {a, b, pts (sommets de la frontière), ca, cb (centres des faces de chaque côté)}."""
+    nf = len(f_ids)
+    e = np.sort(np.concatenate([f_ids[:, [0, 1]], f_ids[:, [1, 2]], f_ids[:, [2, 0]]]), axis=1)
+    owner = np.tile(np.arange(nf), 3)
+    key = e[:, 0].astype(np.int64) * (int(f_ids.max()) + 1) + e[:, 1]
+    order = np.argsort(key, kind='stable')
+    ks, ow, ee = key[order], owner[order], e[order]
+    i0 = np.nonzero(ks[1:] == ks[:-1])[0]
+    fa, fb = ow[i0], ow[i0 + 1]
+    ra, rb = region[fa], region[fb]
+    ok = (ra != rb) & (ra >= 0) & (rb >= 0)
+    i0, fa, fb, ra, rb = i0[ok], fa[ok], fb[ok], ra[ok], rb[ok]
+    lo, hi = np.minimum(ra, rb), np.maximum(ra, rb)
+    out = []
+    for pair in sorted(set(zip(lo.tolist(), hi.tolist()))):
+        m = (lo == pair[0]) & (hi == pair[1])
+        edges = ee[i0[m]]
+        parent = {}
+
+        def find(x):
+            while parent.setdefault(x, x) != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        for a, b in edges.tolist():
+            parent[find(a)] = find(b)
+        groups = {}
+        for j, (a, b) in enumerate(edges.tolist()):
+            groups.setdefault(find(a), []).append(j)
+        fm_a = np.where(ra[m] == pair[0], fa[m], fb[m])
+        fm_b = np.where(ra[m] == pair[0], fb[m], fa[m])
+        for js in groups.values():
+            js = np.array(js)
+            vids = np.unique(edges[js])
+            out.append({'a': pair[0], 'b': pair[1], 'pts': coords[vids], 'fa': fm_a[js], 'fb': fm_b[js]})
+    return out
+
+
+def _frame(e1, e2, n):
+    """Repère droit (colonnes e1', e2', n) dont l'axe z est n et dont x suit au mieux e1 : le tenon carré s'aligne sur le contact."""
+    n = n / (np.linalg.norm(n) or 1.0)
+    x = e1 - n * float(np.dot(e1, n))
+    if np.linalg.norm(x) < 1e-9:
+        x = e2 - n * float(np.dot(e2, n))
+    x = x / (np.linalg.norm(x) or 1.0)
+    y = np.cross(n, x)
+    return np.column_stack([x, y, n])
+
+
+def _place(m, r, c):
+    mat = np.zeros((3, 4))
+    mat[:, :3] = r
+    mat[:, 3] = c
+    return m.transform(mat)
+
+
+def _square_peg(side, length, embed, bevel):
+    """Tenon carré le long de +z : enfoncé de `embed` dans la pièce porteuse, dépasse de `length`, extrémité biseautée."""
+    from manifold3d import Manifold, CrossSection
+    sq = CrossSection.square([side, side], True)
+    body = Manifold.extrude(sq, embed + length - bevel + 0.05).translate([0, 0, -embed])     # léger recouvrement avec l'embout : une seule pièce
+    tip = Manifold.extrude(sq, bevel, 0, 0.0, ((side - 2 * bevel) / side, (side - 2 * bevel) / side)).translate([0, 0, length - bevel])
+    return body + tip
+
+
+def _square_hole(side, depth, back):
+    from manifold3d import Manifold, CrossSection
+    return Manifold.extrude(CrossSection.square([side, side], True), depth + back).translate([0, 0, -back])
+
+
+def add_connectors(solids, joints, centers, size=0.0, length=0.0, clearance=0.2):
+    """Pour chaque contact entre deux pièces : un tenon CARRÉ, soudé à la plus petite pièce (il n'en est pas détachable), et le trou
+    correspondant (jeu `clearance`) dans celle qui la reçoit. Le côté s'adapte à la taille du contact (size = 0), la longueur au côté (length = 0).
+    solids : {région: Manifold}, mis à jour. Renvoie (nombre de tenons, nombre de contacts ignorés)."""
+    made, skipped = 0, 0
+    for jn in sorted(joints, key=lambda j: -len(j['pts'])):
+        a, b = jn['a'], jn['b']
+        if a not in solids or b not in solids or len(jn['pts']) < 3:
+            continue
+        P = jn['pts']
+        c = P.mean(axis=0)
+        _u, _s, vt = np.linalg.svd(P - c, full_matrices=False)
+        n = vt[2] / (np.linalg.norm(vt[2]) or 1.0)
+        e1, e2 = vt[0], vt[1]
+        ext1 = float(np.ptp((P - c) @ e1)); ext2 = float(np.ptp((P - c) @ e2))
+        ca = centers[jn['fa']].mean(axis=0); cb = centers[jn['fb']].mean(axis=0)
+        if float(np.dot(n, cb - ca)) < 0:
+            n = -n                                         # n va de la région a vers la région b
+        va, vb = solids[a].volume(), solids[b].volume()
+        owner, recv, direction = (a, b, n) if va <= vb else (b, a, -n)   # tenon sur la plus petite pièce, trou dans l'autre
+        frame = _frame(e1, e2, direction)
+        base = float(size) if size and size > 0 else min(max(0.35 * min(ext1, ext2), 2.0), 0.55 * min(ext1, ext2), 14.0)
+        done = False
+        for k in (1.0, 0.7, 0.5):
+            side = base * k
+            if side < 1.2 or min(ext1, ext2) < side + 0.8:
+                continue
+            ln = float(length) if length and length > 0 else min(max(side * 1.1, 3.0), 12.0)
+            embed = max(2.0, ln * 0.6)
+            bevel = min(0.6, side / 4.0)
+            count = max(1, min(3, int(ext1 // (2.6 * side))))
+            offs = [(i - (count - 1) / 2.0) * (ext1 / count) for i in range(count)]
+            good = 0
+            for off in offs:
+                spot = c + e1 * off
+                peg = _place(_square_peg(side, ln, embed, bevel), frame, spot)
+                hole = _place(_square_hole(side + 2 * clearance, ln + 0.5, 0.4), frame, spot)
+                p_in = _place(_square_hole(side * 0.9, embed, 0.0).translate([0, 0, -embed]), frame, spot)
+                p_out = _place(_square_hole(side + 2 * clearance, ln + 0.4, 0.0), frame, spot)
+                fi, fo = (solids[owner] ^ p_in).volume() / max(p_in.volume(), 1e-9), (solids[recv] ^ p_out).volume() / max(p_out.volume(), 1e-9)
+                if fi < 0.9 or fo < 0.9:
+                    continue
+                solids[owner] = solids[owner] + peg
+                solids[recv] = solids[recv] - hole
+                good += 1
+            if good:
+                made += good
+                done = True
+                break
+        if not done:
+            skipped += 1
+    return made, skipped
+
+
+def _bbox_overlap(a, b, tol=0.5):
+    return bool(np.all(np.asarray(a[:3]) <= np.asarray(b[3:]) + tol) and np.all(np.asarray(b[:3]) <= np.asarray(a[3:]) + tol))
+
+
+def overlap_connectors(solids, region_color, size=0.0, length=0.0, clearance=0.2, min_volume=2.0):
+    """Pièces de couleurs différentes qui s'interpénètrent (une corne enfoncée dans la tête…) : la plus petite est coupée à la surface de l'autre
+    (elle ne la traverse plus), puis un tenon CARRÉ, soudé à sa face de contact, entre dans un trou creusé dans la grande pièce (avec du jeu).
+    solids : {région: Manifold}, mis à jour. Renvoie (tenons créés, contacts ignorés)."""
+    ids = sorted(solids)
+    boxes = {r: solids[r].bounding_box() for r in ids}
+    pairs = []
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            if region_color[a] == region_color[b] or not _bbox_overlap(boxes[a], boxes[b]):
+                continue
+            inter = solids[a] ^ solids[b]
+            vol = inter.volume()
+            if vol >= min_volume:
+                pairs.append((vol, a, b, inter))
+    made, skipped = 0, 0
+    for vol, a, b, inter in sorted(pairs, key=lambda x: -x[0]):
+        small, big = (a, b) if solids[a].volume() <= solids[b].volume() else (b, a)
+        if vol > 0.3 * solids[small].volume():             # corps largement imbriqués : on garde leurs formes intactes
+            skipped += 1
+            continue
+        pts = np.array(inter.to_mesh().vert_properties[:, :3], dtype=float)
+        c = pts.mean(axis=0)
+        sm = np.array(solids[small].to_mesh().vert_properties[:, :3], dtype=float)
+        n = c - sm.mean(axis=0)
+        if np.linalg.norm(n) < 1e-6:
+            skipped += 1
+            continue
+        n = n / np.linalg.norm(n)
+        proj = (pts - c) @ n
+        t_lo, t_hi = float(proj.min()), float(proj.max())
+        plane = (pts - c) - np.outer(proj, n)
+        _u, _s, vt = np.linalg.svd(plane - plane.mean(axis=0), full_matrices=False)
+        e1, e2 = vt[0] - n * float(vt[0] @ n), vt[1] - n * float(vt[1] @ n)
+        e1 = e1 / (np.linalg.norm(e1) or 1.0)
+        e2 = np.cross(n, e1)
+        ext1 = float(np.ptp(plane @ e1)); ext2 = float(np.ptp(plane @ e2))
+        thick = t_hi - t_lo
+        cut = solids[small] - solids[big]                 # la petite pièce ne traverse plus la grande
+        if cut.is_empty() or cut.volume() < 0.5 * solids[small].volume() * 0.1:
+            skipped += 1
+            continue
+        base = float(size) if size and size > 0 else min(max(0.35 * min(ext1, ext2), 2.5), 14.0)
+        # positions candidates : sommets de la zone d'interpénétration proches de la face d'entrée, du centre vers l'extérieur
+        near = pts[proj <= t_lo + 0.3 * max(thick, 1e-6)]
+        if len(near) < 3:
+            near = pts
+        near = near[np.argsort(np.linalg.norm(near - c, axis=1))][::max(1, len(near) // 40)][:40]
+        done = False
+        for k in (1.0, 0.7, 0.5):
+            side = base * k
+            ln = float(length) if length and length > 0 else min(max(side * 1.1, 3.0), 12.0)
+            if side < 1.4 or min(ext1, ext2) < side + 1.0:
+                continue
+            embed = max(2.0, ln * 0.6)
+            bevel = min(0.6, side / 4.0)
+            frame = _frame(e1, e2, n)
+            good, cur_small, cur_big, placed = 0, cut, solids[big], []
+            for spot in near:
+                if any(np.linalg.norm(spot - q) < 2.6 * side for q in placed):
+                    continue
+                peg = _place(_square_peg(side, ln, embed, bevel), frame, spot)
+                hole = _place(_square_hole(side + 2 * clearance, ln + 0.5, 0.4), frame, spot)
+                p_in = _place(_square_hole(side * 0.9, embed, 0.0).translate([0, 0, -embed]), frame, spot)
+                p_out = _place(_square_hole(side + 2 * clearance, ln + 0.4, 0.0), frame, spot)
+                fi = (cur_small ^ p_in).volume() / max(p_in.volume(), 1e-9)
+                fo = (cur_big ^ p_out).volume() / max(p_out.volume(), 1e-9)
+                if fi < 0.7 or fo < 0.6:
+                    continue
+                cur_small = cur_small + peg
+                cur_big = cur_big - hole
+                placed.append(spot)
+                good += 1
+                if good >= 2:
+                    break
+            if good:
+                solids[small], solids[big] = cur_small, cur_big
+                made += good
+                done = True
+                break
+        if not done:
+            skipped += 1
+    return made, skipped
+
+
+def _group_shells(shells, gap):
+    """Regroupe les morceaux d'une même couleur qui se touchent presque (distance < gap mm) : ils restent ensemble, dans leurs positions
+    d'origine, comme UNE pièce. gap = 0 : chaque morceau séparé reste une pièce à part. Renvoie une liste de (sommets, faces)."""
+    n = len(shells)
+    if n <= 1 or gap <= 0:
+        return list(shells)
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    boxes = [(v.min(axis=0), v.max(axis=0)) for v, _f in shells]
+    trees = {}
+    try:
+        from scipy.spatial import cKDTree
+    except Exception:
+        cKDTree = None
+    for i in range(n):
+        for j in range(i + 1, n):
+            if find(i) == find(j):
+                continue
+            lo = np.maximum(boxes[i][0], boxes[j][0]); hi = np.minimum(boxes[i][1], boxes[j][1])
+            d = np.maximum(lo - hi, 0.0)
+            if float(np.linalg.norm(d)) >= gap:
+                continue                                          # boîtes englobantes trop éloignées
+            if cKDTree is not None and n <= 600:
+                for q in (i, j):
+                    if q not in trees:
+                        trees[q] = cKDTree(shells[q][0])
+                small, big = (i, j) if len(shells[i][0]) <= len(shells[j][0]) else (j, i)
+                dist = float(trees[big].query(shells[small][0], k=1)[0].min())
+                if dist >= gap:
+                    continue
+            parent[find(j)] = find(i)
+    groups = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(i)
+    out = []
+    for idxs in groups.values():
+        vs, fs, off = [], [], 0
+        for i in idxs:
+            v, f = shells[i]
+            vs.append(v)
+            fs.append(f + off)
+            off += len(v)
+        out.append((np.vstack(vs), np.vstack(fs)))
+    return out
+
+
+def _bodies(f_ids):
+    """Corps d'un seul tenon (faces reliées par un sommet soudé) : liste de tableaux d'indices de faces (scipy, rapide)."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    n = int(f_ids.max()) + 1
+    a = np.concatenate([f_ids[:, 0], f_ids[:, 1]]); b = np.concatenate([f_ids[:, 1], f_ids[:, 2]])
+    _k, lab = connected_components(coo_matrix((np.ones(len(a), dtype=np.int8), (a, b)), shape=(n, n)), directed=False)
+    fl = lab[f_ids[:, 0]]
+    order = np.argsort(fl, kind='stable')
+    cuts = np.nonzero(np.diff(fl[order]))[0] + 1
+    return np.split(order, cuts)
+
+
+def _absorb_strays(labels, f_ids, frac=0.006, min_faces=80):
+    """Un corps déjà fermé et (presque) monocolore reste ENTIER, avec sa couleur dominante : quelques faces d'une autre couleur
+    (franges de peinture) ne le découpent pas. Renvoie (étiquettes corrigées, corps réellement multicolores)."""
+    labels = labels.copy()
+    mixed = []
+    for comp in _bodies(f_ids):
+        cnt = np.bincount(labels[comp])
+        nz = np.nonzero(cnt)[0]
+        if len(nz) <= 1:
+            continue
+        main = int(cnt.argmax())
+        for k in nz:
+            if k != main and cnt[k] < max(min_faces, frac * len(comp)):
+                labels[comp[labels[comp] == k]] = main
+        if len(np.unique(labels[comp])) > 1:
+            mixed.append(comp)
+    return labels, mixed
+
+
+def _split_body_by_planes(verts, faces, f_ids, coords, labels, comp):
+    """Corps peint de plusieurs couleurs : on coupe le VOLUME plein par un plan passant par la frontière de chaque zone (coupe plane, pièces pleines
+    et non des coques creuses). {couleur: (sommets, faces)} ; None si la frontière n'est pas assez plane (on retombe alors sur les coques)."""
+    used, inv = np.unique(faces[comp], return_inverse=True)
+    v, f, _st = _repair_mesh(verts[used], inv.reshape(-1, 3))
+    S = _solid(v, f)
+    if S is None:
+        return None
+    labs = labels[comp]
+    ks = [int(k) for k in np.unique(labs)]
+    ks.sort(key=lambda k: -int((labs == k).sum()))
+    remaining, out = S, {}
+    for k in ks[1:]:
+        fk, fo = comp[labs == k], comp[labs != k]
+        bd = np.array(sorted(set(f_ids[fk].ravel().tolist()) & set(f_ids[fo].ravel().tolist())))
+        if len(bd) < 3:
+            return None
+        P = coords[bd]
+        c = P.mean(axis=0)
+        _u, sv, vt = np.linalg.svd(P - c, full_matrices=False)
+        n = vt[2] / (np.linalg.norm(vt[2]) or 1.0)
+        if sv[2] > 0.15 * sv[0]:
+            return None
+        side = float(np.dot(verts[faces[fk]].reshape(-1, 3).mean(axis=0) - c, n))
+        if side < 0:
+            n = -n
+        above, below = remaining.split_by_plane(n.tolist(), float(np.dot(n, c)))
+        if above.is_empty() or below.is_empty():
+            return None
+        out[k], remaining = above, below
+    out[ks[0]] = remaining
+    return {k: _unsolid(m) for k, m in out.items()}
+
+
+def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
+    """Découpe en régions, répare chacune, ajoute les connecteurs demandés, regroupe les morceaux voisins d'une même couleur,
+    puis range chaque couleur sur son plateau. Renvoie (objets par couleur {k: [objets]}, bilan de réparation, tient, connecteurs)."""
+    labels, colors, _sizes = _group_colors(face_rgb, tol)
+    region, region_color, f_ids, coords = _regions(mesh, labels)
+    verts = np.asarray(mesh.vertices, dtype=float)
+    faces = np.asarray(mesh.faces)
+    labels, mixed = _absorb_strays(labels, f_ids)
+    region, region_color, f_ids, coords = _regions(mesh, labels)
+    stats = {'filled': 0, 'open': 0, 'nonmanifold': 0}
+    shells = {}
+    for comp in mixed:
+        try:
+            pieces = _split_body_by_planes(verts, faces, f_ids, coords, labels, comp)
+            regs = {}
+            for r in np.unique(region[comp]):
+                if r >= 0:
+                    regs.setdefault(region_color[r], []).append(int(r))
+            if pieces is None or any(len(regs.get(k, [])) != 1 for k in pieces) or set(regs) != set(pieces):
+                continue
+            for k, (v, f) in pieces.items():
+                shells[regs[k][0]] = (v, f)
+        except Exception as e:
+            app_logger.warning(f"[Séparation couleur] coupe plane impossible : {e}")
+    for r in range(len(region_color)):
+        if r in shells:
+            continue
+        idx = np.nonzero(region == r)[0]
+        used, inv = np.unique(faces[idx], return_inverse=True)
+        v, f, st = _repair_mesh(verts[used], inv.reshape(-1, 3))
+        for k in stats:
+            stats[k] += st[k]
+        shells[r] = (v, f)
+    conn = {'made': 0, 'skipped': 0, 'error': None}
+    if spec and len(region_color) > 1:
+        try:
+            solids = {}
+            for r, (v, f) in shells.items():
+                m = _solid(v, f)
+                if m is not None:
+                    solids[r] = m
+            made0, skipped0 = 0, 0                         # pas d'entaille des corps qui se chevauchent : leurs formes d'origine restent lisses
+            joints = _joints(f_ids, region, coords)
+            centers = verts[faces].mean(axis=1)
+            made, skipped = add_connectors(solids, joints, centers, **spec)
+            conn.update(made=made0 + made, skipped=skipped0 + skipped)
+            for r, m in solids.items():
+                shells[r] = _unsolid(m)
+        except ImportError:
+            conn['error'] = 'manifold3d'
+        except Exception as e:
+            app_logger.warning(f"[Séparation couleur] connecteurs impossibles : {e}")
+            conn['error'] = str(e)
+    per_color, fits = {}, True
+    for k in range(len(colors)):
+        keep = []
+        for r in range(len(region_color)):
+            if region_color[r] != k:
+                continue
+            v, f = shells[r]
+            try:
+                from scipy.sparse import coo_matrix
+                from scipy.sparse.csgraph import connected_components
+                n = len(v)
+                lab = connected_components(coo_matrix((np.ones(len(f) * 2, dtype=np.int8), (np.concatenate([f[:, 0], f[:, 1]]), np.concatenate([f[:, 1], f[:, 2]]))), shape=(n, n)), directed=False)[1]
+                fl = lab[f[:, 0]]
+                for c in np.unique(fl):
+                    ff = f[fl == c]
+                    vol = abs(float(np.einsum('ij,ij->', v[ff[:, 0]], np.cross(v[ff[:, 1]], v[ff[:, 2]])) / 6.0))
+                    if vol > 0.02 or len(ff) > 400:      # éclats de coupe sans volume : écartés
+                        if len(np.unique(fl)) == 1:
+                            keep.append((v, f))
+                        else:
+                            u, inv = np.unique(ff, return_inverse=True)
+                            keep.append((v[u], inv.reshape(-1, 3)))
+            except Exception:
+                keep.append((v, f))
+        sh = _group_shells(keep, merge_gap)
+        if not sh:
+            continue
+        objs, ok = _arrange(sh, bed_w, bed_d)
+        per_color[k] = objs
+        fits = fits and ok
+    return per_color, stats, fits, conn
+
+
 def build_3mf(plates, bed_w, bed_d, out_path, plate_names=None):
     """Écrit le 3MF. `plates` = liste de plateaux ; chaque plateau = liste de dict
     {name, vertices (Nx3, centrés en XY, z ≥ 0), faces (Mx3), cx, cy (centre dans le plateau, mm)}."""
     count = len(plates)
     objects_xml, build_xml, config_objects, config_plates, materials_xml = [], [], [], [], []
     obj_id = 0
+    filaments = []   # couleurs distinctes, dans l'ordre : le n° de filament d'un objet = sa position ici (1, 2, 3…)
+    for pieces in plates:
+        for piece in pieces:
+            if piece.get('rgb') is not None and tuple(int(x) for x in piece['rgb']) not in filaments:
+                filaments.append(tuple(int(x) for x in piece['rgb']))
     for p_idx, pieces in enumerate(plates):
         ox, oy = _plate_origin(p_idx, count, bed_w, bed_d)
         instances = []
@@ -99,7 +803,10 @@ def build_3mf(plates, bed_w, bed_d, out_path, plate_names=None):
                                f'<triangles>{tris}</triangles></mesh></object>')
             tx, ty = ox + piece['cx'], oy + piece['cy']
             build_xml.append(f'<item objectid="{obj_id}" transform="1 0 0 0 1 0 0 0 1 {tx:.4f} {ty:.4f} 0" printable="1"/>')
-            config_objects.append(f'<object id="{obj_id}"><metadata key="name" value={name}/></object>')
+            ext = ''
+            if piece.get('rgb') is not None:
+                ext = f'<metadata key="extruder" value="{filaments.index(tuple(int(x) for x in piece["rgb"])) + 1}"/>'
+            config_objects.append(f'<object id="{obj_id}"><metadata key="name" value={name}/>{ext}</object>')
             instances.append(f'<model_instance><metadata key="object_id" value="{obj_id}"/>'
                              f'<metadata key="instance_id" value="0"/><metadata key="identify_id" value="{obj_id}"/></model_instance>')
         config_plates.append(f'<plate><metadata key="plater_id" value="{p_idx + 1}"/>'
@@ -117,11 +824,20 @@ def build_3mf(plates, bed_w, bed_d, out_path, plate_names=None):
                      '<Default Extension="config" ContentType="text/xml"/></Types>')
     rels = ('<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+    project = None
+    if filaments:
+        import json
+        w, d = int(round(bed_w)), int(round(bed_d))
+        project = json.dumps({'from': 'project', 'filament_colour': ['#%02X%02X%02X' % c for c in filaments],
+                              'filament_type': ['PLA'] * len(filaments),
+                              'printable_area': ['0x0', f'{w}x0', f'{w}x{d}', f'0x{d}']}, indent=2)
     with zipfile.ZipFile(out_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr('[Content_Types].xml', content_types)
         zf.writestr('_rels/.rels', rels)
         zf.writestr('3D/3dmodel.model', model)
         zf.writestr('Metadata/model_settings.config', config)
+        if project:
+            zf.writestr('Metadata/project_settings.config', project)
     return obj_id
 
 
@@ -321,69 +1037,16 @@ def _load_colored_mesh(path):
     return mesh, np.asarray(rgb)
 
 
-def _band_faces(verts, faces, labels, k, depth):
-    """Faces voisines (d'une autre couleur que k) situées à moins de `depth` mm de la couleur k, mesurées SUR la surface (de proche en proche).
-    La main déborde ainsi de `depth` mm sur le manchon : c'est la partie qui s'emboîte dans la pièce voisine."""
-    import heapq
-    n = len(faces)
-    _, ids = np.unique(np.round(verts, 4), axis=0, return_inverse=True)
-    ids = np.asarray(ids).reshape(-1)
-    f = ids[faces]
-    e = np.sort(np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1)
-    owner = np.tile(np.arange(n), 3)
-    key = e[:, 0].astype(np.int64) * (int(ids.max()) + 1) + e[:, 1]
-    order = np.argsort(key, kind='stable')
-    ks, ow = key[order], owner[order]
-    same = ks[1:] == ks[:-1]
-    a, b = ow[:-1][same], ow[1:][same]
-    src = np.concatenate([a, b]); dst = np.concatenate([b, a])
-    o2 = np.argsort(src, kind='stable'); src, dst = src[o2], dst[o2]
-    start = np.searchsorted(src, np.arange(n + 1))
-    cen = verts[faces].mean(axis=1)
-    heap, dist = [], {}
-    for i in np.nonzero(labels == k)[0]:
-        for j in dst[start[i]:start[i + 1]]:
-            if labels[j] != k:
-                com = [x for x in range(3) if f[i][x] in f[j]]            # arête commune : la distance se mesure depuis la frontière
-                mid = verts[faces[i]][com].mean(axis=0) if com else cen[i]
-                d = float(np.linalg.norm(cen[j] - mid))
-                if d <= depth and d < dist.get(int(j), 1e18):
-                    dist[int(j)] = d
-                    heapq.heappush(heap, (d, int(j)))
-    seen = set()
-    while heap and len(seen) < 400000:
-        d, i = heapq.heappop(heap)
-        if i in seen or d > dist.get(i, 1e18):
-            continue
-        seen.add(i)
-        for j in dst[start[i]:start[i + 1]]:
-            j = int(j)
-            if labels[j] == k or j in seen:
-                continue
-            nd = d + float(np.linalg.norm(cen[j] - cen[i]))
-            if nd <= depth and nd < dist.get(j, 1e18):
-                dist[j] = nd
-                heapq.heappush(heap, (nd, j))
-    return np.array(sorted(seen), dtype=np.int64)
-
-
-def split_mesh_by_color(mesh, face_rgb, tolerance=0.0, overlap=0.0):
-    """Une pièce par couleur : [{'rgb', 'vertices', 'faces', 'count'}], de la plus grande à la plus petite.
-    overlap (mm) : chaque pièce reprend en plus une bande de `overlap` mm de la surface voisine (emboîtement)."""
+def split_mesh_by_color(mesh, face_rgb, tolerance=0.0):
+    """Une pièce par couleur : [{'rgb', 'vertices', 'faces', 'count'}], de la plus grande à la plus petite."""
     labels, colors, sizes = _group_colors(face_rgb, tolerance)
     verts = np.asarray(mesh.vertices, dtype=float)
     faces = np.asarray(mesh.faces)
     out = []
     for k, rgb in enumerate(colors):
-        mask = labels == k
-        if overlap > 0 and len(colors) > 1:
-            extra = _band_faces(verts, faces, labels, k, overlap)
-            if len(extra):
-                mask = mask.copy()
-                mask[extra] = True
-        sel = faces[mask]
+        sel = faces[labels == k]
         used, inv = np.unique(sel, return_inverse=True)
-        out.append({'rgb': rgb, 'vertices': verts[used], 'faces': inv.reshape(-1, 3), 'count': int(sizes[k])})
+        out.append({'rgb': rgb, 'vertices': verts[used], 'faces': inv.reshape(-1, 3), 'count': int(sizes[k]), 'label': k})
     return out
 
 
@@ -428,7 +1091,11 @@ def api_split_color_3mf():
         bed_w = float(data.get('bed_width') or 220)
         bed_d = float(data.get('bed_height') or 220)
         tol = min(max(float(data.get('tolerance') or 0), 0.0), 100.0)
-        overlap = min(max(float(data.get('overlap') or 0), 0.0), 50.0)
+        use_conn = False                                    # connecteurs retirés (formes pas assez fiables)
+        csize = min(max(float(data.get('conn_size') or 0), 0.0), 30.0)
+        clen = min(max(float(data.get('conn_length') or 0), 0.0), 30.0)
+        mgap = min(max(float(data.get('merge_gap') if data.get('merge_gap') not in (None, '') else 5), 0.0), 500.0)
+        cclear = min(max(float(data.get('conn_clearance') if data.get('conn_clearance') not in (None, '') else 0.2), 0.0), 1.0)
     except (TypeError, ValueError):
         return jsonify({"error": "Paramètres invalides"}), 400
     if bed_w < 20 or bed_d < 20:
@@ -439,7 +1106,7 @@ def api_split_color_3mf():
         return jsonify({"error": "Fichier introuvable"}), 404
     try:
         mesh, face_rgb = _load_colored_mesh(path)
-        pieces = split_mesh_by_color(mesh, face_rgb, tol, overlap)
+        pieces = split_mesh_by_color(mesh, face_rgb, tol)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
@@ -461,18 +1128,25 @@ def api_split_color_3mf():
     if len(pieces) < 2:
         return jsonify({"error": "Une seule couleur détectée : rien à séparer", "colors": colors, "color_count": len(pieces)}), 400
 
-    b = mesh.bounds
-    cx, cy, z0 = float((b[0][0] + b[1][0]) / 2), float((b[0][1] + b[1][1]) / 2), float(b[0][2])
-    fits = float(b[1][0] - b[0][0]) <= bed_w and float(b[1][1] - b[0][1]) <= bed_d
     base = _safe_name(path)
     plates, names = [], []
-    for i, p in enumerate(pieces, 1):
-        v = p['vertices'].copy()
-        v[:, 0] -= cx
-        v[:, 1] -= cy
-        v[:, 2] -= z0
-        label = f"{base} {_hex(p['rgb'])}"
-        plates.append([{'name': label, 'vertices': v, 'faces': p['faces'], 'cx': bed_w / 2.0, 'cy': bed_d / 2.0, 'rgb': p['rgb']}])
+    try:
+        spec = {'size': csize, 'length': clen, 'clearance': cclear} if use_conn else None
+        per_color, repaired, fits, conn = _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, mgap)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        app_logger.warning(f"[Séparation couleur] échec : {e}")
+        return jsonify({"error": f"Échec de la préparation des pièces : {e}"}), 500
+    for p in pieces:
+        objs = per_color.get(p['label'])
+        if not objs:
+            continue
+        plate = []
+        for j, o in enumerate(objs, 1):
+            label = f"{base} {_hex(p['rgb'])}" + (f" ({j})" if len(objs) > 1 else '')
+            plate.append({'name': label, 'vertices': o['vertices'], 'faces': o['faces'], 'cx': o['cx'], 'cy': o['cy'], 'rgb': p['rgb']})
+        plates.append(plate)
         names.append(_hex(p['rgb']))
     try:
         folder = _dest_dir([path], str(data.get('source_id') or '').strip() or None, data.get('target_subfolder'))
@@ -491,6 +1165,8 @@ def api_split_color_3mf():
         "output_path": out_path,
         "output_filename": os.path.basename(_unc(out_path)),
         "plate_count": len(plates),
+        "repair": repaired,
+        "connectors": conn,
         "colors": colors,
         "preview": _preview_or_none(pieces),
         "too_big": not fits,
@@ -528,9 +1204,42 @@ def _owner_post(fn):
     return wrapper
 
 
+def api_split_color_browse():
+    """Ouvre l'explorateur de fichiers de Stellio (application de bureau) pour choisir le dossier d'enregistrement.
+    Le dossier doit se trouver dans une source de la bibliothèque : on renvoie la source et le sous-dossier correspondants."""
+    try:
+        import webview
+        dlg = _wv_dialog(webview, 'FOLDER') if _wv_dialog else webview.FOLDER_DIALOG
+        result = webview.windows[0].create_file_dialog(dlg)
+    except (ImportError, IndexError, AttributeError):
+        return jsonify({"error": "L'explorateur n'est disponible que dans l'application de bureau", "code": "no_picker"}), 501
+    except Exception as e:
+        app_logger.warning(f"[Séparation couleur] explorateur : {e}")
+        return jsonify({"error": "Impossible d'ouvrir l'explorateur"}), 500
+    folder = (result[0] if result else None)
+    if not folder:
+        return jsonify({"error": "Annulé", "code": "cancelled"}), 400
+    norm = str(folder).replace('\\', '/').rstrip('/')
+    conn = get_db()
+    try:
+        rows = conn.execute("SELECT id, path FROM sources WHERE user_id = ?", (session['user_id'],)).fetchall()
+    finally:
+        conn.close()
+    best = None
+    for r in rows:
+        base = str(r['path'] or '').replace('\\', '/').rstrip('/')
+        if base and (norm.lower() == base.lower() or norm.lower().startswith(base.lower() + '/')):
+            if best is None or len(base) > len(best[1]):
+                best = (r['id'], base)
+    if best is None:
+        return jsonify({"error": "Ce dossier n'est dans aucune de tes sources : ajoute-le d'abord comme source, ou choisis un dossier de la liste.", "code": "outside"}), 400
+    return jsonify({"source_id": str(best[0]), "sub": norm[len(best[1]):].strip('/'), "path": norm})
+
+
 _ROUTES = (
     ('/api/x/split-color/files', ['GET'], 'api_split_color_files', ('login_required', )),
     ('/api/x/split-color/folders', ['GET'], 'api_split_color_folders', ('login_required', )),
+    ('/api/x/split-color/browse', ['POST'], 'api_split_color_browse', ('login_required', '_owner_post')),
     ('/api/x/split-color/mkdir', ['POST'], 'api_split_color_mkdir', ('login_required', '_owner_post')),
     ('/api/x/split-color/split', ['POST'], 'api_split_color_3mf', ('login_required', '_owner_post')),
 )

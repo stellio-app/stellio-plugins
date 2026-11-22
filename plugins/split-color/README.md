@@ -31,6 +31,8 @@ Découpe un 3MF multicolore (Bambu Studio / OrcaSlicer) en un nouveau 3MF avec *
 
 - Choisissez le 3MF dans votre bibliothèque Stellio, le dossier d'enregistrement et le nom du résultat
 - Regroupement des couleurs avec tolérance réglable ; taille du plateau prise en compte
+- Chaque morceau est réparé (trous refermés), posé sur le plateau et rangé près du centre ; chaque objet reçoit le filament de sa couleur
+- Les morceaux d'une même couleur qui se touchent presque restent ensemble (distance réglable) ; les autres sont séparés et posés sur le plateau
 - Analyse (aperçu) avant toute écriture ; le fichier d'origine n'est jamais modifié
 - Permissions `ui`, `api:read` et `api:write` (n'écrit que le nouveau 3MF), aucun accès réseau
 
