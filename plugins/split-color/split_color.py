@@ -744,7 +744,7 @@ def _trim_rim(v, f, max_frac=0.02, max_faces=250000):
     return _unsolid(above), -n
 
 
-def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=25.0):
+def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=25.0, spec=None):
     """Deux pièces de couleurs différentes qui s'interpénètrent (œuf dans l'orbite, corne dans la tête…), taillées COMME AU CUTTER :
     la petite pièce est tranchée par un plan plat à sa base (la partie enfouie, cachée, est supprimée) ; la grande est creusée de la forme de ce
     qui reste (agrandie du jeu), avec un fond plan. Au contact : un plan et les parois lisses de la petite pièce, jamais la texture de l'autre.
@@ -752,7 +752,7 @@ def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=
     orig = dict(solids)
     ids = sorted(orig)
     boxes = {r: orig[r].bounding_box() for r in ids}
-    touched, down = [], {}
+    touched, down, pegs = [], {}, 0
     for i, a in enumerate(ids):
         for b in ids[i + 1:]:
             if region_color[a] == region_color[b] or not _bbox_overlap(boxes[a], boxes[b]):
@@ -786,10 +786,52 @@ def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=
             res = solids[big] - cutter
             if res.is_empty() or res.volume() < 0.2 * solids[big].volume():
                 continue
+            if spec and small in down:                       # tenons de positionnement : sur le fond du logement (grande pièce), trou dans la base plane de la petite
+                try:
+                    res, top, k = _seat_pegs(res, top, n, level, **spec)
+                    if k:
+                        solids[small] = top
+                        pegs += k
+                except Exception:
+                    pass
             solids[big] = res
             if big not in touched:
                 touched.append(big)
-    return touched, down
+    return touched, down, pegs
+
+
+def _seat_pegs(big, small, n, level, size=0.0, length=0.0, clearance=0.2):
+    """Un ou deux tenons carrés plantés dans le fond plan du logement de `big`, et les trous correspondants (avec jeu) dans la base plane de `small`.
+    Renvoie (big, small, nombre de tenons)."""
+    pts = np.array(small.to_mesh().vert_properties[:, :3], dtype=float)
+    base = pts[(pts @ n) - level < 0.4]
+    if len(base) < 3:
+        return big, small, 0
+    c0 = base.mean(axis=0)
+    c0 = c0 + n * (level - float(c0 @ n))
+    _u, _s, vt = np.linalg.svd(base - base.mean(axis=0), full_matrices=False)
+    e1, e2 = vt[0] - n * float(vt[0] @ n), vt[1] - n * float(vt[1] @ n)
+    e1 = e1 / (np.linalg.norm(e1) or 1.0)
+    ext1 = float(np.ptp((base - c0) @ e1)); ext2 = float(np.ptp((base - c0) @ (np.cross(n, e1))))
+    side = float(size) if size and size > 0 else min(max(0.4 * min(ext1, ext2), 1.5), 4.0)
+    if min(ext1, ext2) < side + 1.2:
+        return big, small, 0
+    ln = float(length) if length and length > 0 else min(max(side * 1.1, 2.0), 5.0)
+    embed, bevel = 1.5, min(0.5, side / 4.0)
+    frame = _frame(e1, np.cross(n, e1), n)
+    offs = [-0.25 * ext1, 0.25 * ext1] if ext1 > 3.2 * side + 1.2 else [0.0]
+    made = 0
+    for off in offs:
+        spot = c0 + e1 * off
+        peg = _place(_square_peg(side, ln, embed, bevel), frame, spot)
+        hole = _place(_square_hole(side + 2 * clearance, ln + 0.5, 0.3), frame, spot)
+        p_in = _place(_square_hole(side * 0.9, embed, 0.0).translate([0, 0, -embed]), frame, spot)
+        p_out = _place(_square_hole(side * 0.9, ln * 0.8, 0.0), frame, spot)
+        if (big ^ p_in).volume() < 0.7 * p_in.volume() or (small ^ p_out).volume() < 0.7 * p_out.volume():
+            continue
+        big, small = big + peg, small - hole
+        made += 1
+    return big, small, made
 
 
 def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
@@ -848,18 +890,13 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
                 m = _solid(v, f)
                 if m is not None:
                     solids[r] = m
-            carved, sdown = carve_seats(solids, region_color)   # coupes au cutter : base plane de la petite pièce, logement à fond plan dans la grande
+            carved, sdown, pegs = carve_seats(solids, region_color, spec=spec)   # coupes au cutter : base plane de la petite pièce, logement à fond plan, tenons
             conn['seats'] = len(carved)
+            conn['made'] = pegs
             changed = set(carved)
             for r, d in sdown.items():
                 if r not in fixed_orient:
                     orient[r] = d
-            if spec:
-                joints = _joints(f_ids, region, coords)
-                centers = verts[faces].mean(axis=1)
-                made, skipped = add_connectors(solids, joints, centers, **spec)
-                conn.update(made=made, skipped=skipped)
-                changed = set(solids)
             for r in changed:
                 shells[r] = _unsolid(solids[r])
         except ImportError:
@@ -1224,7 +1261,7 @@ def api_split_color_3mf():
         bed_w = float(data.get('bed_width') or 220)
         bed_d = float(data.get('bed_height') or 220)
         tol = min(max(float(data.get('tolerance') or 0), 0.0), 100.0)
-        use_conn = False                                    # connecteurs retirés (formes pas assez fiables)
+        use_conn = data.get('connectors') not in (False, 0, '0', 'false')      # tenons de positionnement (actifs par défaut)
         csize = min(max(float(data.get('conn_size') or 0), 0.0), 30.0)
         clen = min(max(float(data.get('conn_length') or 0), 0.0), 30.0)
         mgap = min(max(float(data.get('merge_gap') if data.get('merge_gap') not in (None, '') else 5), 0.0), 500.0)
