@@ -93,7 +93,7 @@ ja:{mg:'同じ色のパーツをこの距離（mm）より近ければまとめ�
 let L='fr',sel=null,sources=[];
 const $=id=>document.getElementById(id),t=k=>(T[L]||T.en)[k]||T.en[k]||k;
 function esc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function labels(){const m={t_title:'title',t_intro:'intro',t_search:'search',t_name:'name',t_tol:'tol',t_src:'src',t_bw:'bw',t_bd:'bd',t_view:'view',t_mg:'mg',t_mgh:'mgh',t_cn:'cn',t_cnh:'cnh',t_cd:'cd',t_cl:'cl',t_cc:'cc'};
+function labels(){const m={t_title:'title',t_intro:'intro',t_search:'search',t_name:'name',t_tol:'tol',t_src:'src',t_bw:'bw',t_bd:'bd',t_view:'view',t_mg:'mg',t_mgh:'mgh'};
   for(const k in m)$(k).textContent=t(m[k]);$('analyze').textContent=t('analyze');$('run').textContent=t('run');$('mkopen').innerHTML='<span class="mi">'+ICO_PLUS+'</span> ';$('mkopen').appendChild(document.createTextNode(t('mkopen')));$('browse').innerHTML=ICO_OPEN;$('browse').title=t('browse');$('t_savehint').textContent=t('savehint');$('t_bedh').textContent=t('bedh');if($('here'))$('here').textContent=hereTxt();}
 function msg(txt,cls){const m=$('msg');m.textContent=cls==='busy'?String(txt).replace(/[\u2026.]+$/,''):txt;m.className=cls||'';if(cls==='busy'){const d=document.createElement('span');d.className='dots';d.innerHTML='<i></i><i></i><i></i>';m.appendChild(d)}m.style.display=txt?'block':'none'}
 function finished(d){const m=$('msg');m.className='finished';m.innerHTML='';
