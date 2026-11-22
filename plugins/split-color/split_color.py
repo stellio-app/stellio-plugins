@@ -178,6 +178,72 @@ def _dest_dir(paths, source_id, sub_rel):
     return folder
 
 
+def _resolve_dir(source_id, sub_rel):
+    """(dossier, parties) d'un sous-dossier d'une source, SANS rien créer. Lève ValueError si le choix est invalide."""
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT path FROM sources WHERE id = ? AND user_id = ?", (source_id, session['user_id'])).fetchone()
+    finally:
+        conn.close()
+    if not row or not row['path']:
+        raise ValueError("Source introuvable")
+    base = row['path']
+    parts = [x for x in (sub_rel or '').replace('\\', '/').strip('/').split('/') if x]
+    if any(x in ('.', '..') or re.search(r'[<>:"|?*\x00-\x1f]', x) for x in parts):
+        raise ValueError("Dossier invalide")
+    if _is_unc(base):
+        folder = '/'.join([_unc(base).rstrip('/')] + parts)
+        kw = _smb_kwargs_for_path(session['user_id'], folder)
+        if kw is None:
+            raise ValueError("Source réseau introuvable pour ce dossier")
+        return folder, parts, kw
+    return os.path.join(base, *parts), parts, None
+
+
+def api_split_color_folders():
+    """Sous-dossiers d'un dossier d'une source (pour choisir où enregistrer, comme pour les téléchargements)."""
+    try:
+        folder, parts, kw = _resolve_dir(str(request.args.get('source_id') or ''), request.args.get('sub'))
+        names = []
+        if kw is not None:
+            for e in smbclient.scandir(folder, **kw):
+                if e.is_dir() and not e.name.startswith(('.', '$')):
+                    names.append(e.name)
+        else:
+            with os.scandir(folder) as it:
+                for e in it:
+                    if e.is_dir() and not e.name.startswith('.'):
+                        names.append(e.name)
+        names.sort(key=str.lower)
+        return jsonify({"sub": '/'.join(parts), "folders": names[:500], "truncated": len(names) > 500})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        app_logger.warning(f"[Séparation couleur] dossiers illisibles : {e}")
+        return jsonify({"error": "Dossier illisible"}), 400
+
+
+def api_split_color_mkdir():
+    """Crée un sous-dossier dans une source (un seul niveau à la fois) et renvoie son chemin relatif."""
+    data = request.json or {}
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', str(data.get('name') or '')).strip('. ')[:80]
+    if not name:
+        return jsonify({"error": "Nom de dossier invalide"}), 400
+    try:
+        _f, parts, _kw = _resolve_dir(str(data.get('source_id') or ''), data.get('sub'))
+        folder, parts2, kw = _resolve_dir(str(data.get('source_id') or ''), '/'.join(parts + [name]))
+        if kw is not None:
+            smbclient.makedirs(folder, exist_ok=True, **kw)
+        else:
+            os.makedirs(folder, exist_ok=True)
+        return jsonify({"ok": True, "sub": '/'.join(parts2)})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        app_logger.warning(f"[Séparation couleur] création de dossier impossible : {e}")
+        return jsonify({"error": "Création du dossier impossible"}), 400
+
+
 def _out_path(folder, name, count):
     base = _clean_filename(name) or f'fusion_{count}_pieces'
     unc = _is_unc(folder)
@@ -255,14 +321,67 @@ def _load_colored_mesh(path):
     return mesh, np.asarray(rgb)
 
 
-def split_mesh_by_color(mesh, face_rgb, tolerance=0.0):
-    """Une pièce par couleur : [{'rgb', 'vertices', 'faces', 'count'}], de la plus grande à la plus petite."""
+def _band_faces(verts, faces, labels, k, depth):
+    """Faces voisines (d'une autre couleur que k) situées à moins de `depth` mm de la couleur k, mesurées SUR la surface (de proche en proche).
+    La main déborde ainsi de `depth` mm sur le manchon : c'est la partie qui s'emboîte dans la pièce voisine."""
+    import heapq
+    n = len(faces)
+    _, ids = np.unique(np.round(verts, 4), axis=0, return_inverse=True)
+    ids = np.asarray(ids).reshape(-1)
+    f = ids[faces]
+    e = np.sort(np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1)
+    owner = np.tile(np.arange(n), 3)
+    key = e[:, 0].astype(np.int64) * (int(ids.max()) + 1) + e[:, 1]
+    order = np.argsort(key, kind='stable')
+    ks, ow = key[order], owner[order]
+    same = ks[1:] == ks[:-1]
+    a, b = ow[:-1][same], ow[1:][same]
+    src = np.concatenate([a, b]); dst = np.concatenate([b, a])
+    o2 = np.argsort(src, kind='stable'); src, dst = src[o2], dst[o2]
+    start = np.searchsorted(src, np.arange(n + 1))
+    cen = verts[faces].mean(axis=1)
+    heap, dist = [], {}
+    for i in np.nonzero(labels == k)[0]:
+        for j in dst[start[i]:start[i + 1]]:
+            if labels[j] != k:
+                com = [x for x in range(3) if f[i][x] in f[j]]            # arête commune : la distance se mesure depuis la frontière
+                mid = verts[faces[i]][com].mean(axis=0) if com else cen[i]
+                d = float(np.linalg.norm(cen[j] - mid))
+                if d <= depth and d < dist.get(int(j), 1e18):
+                    dist[int(j)] = d
+                    heapq.heappush(heap, (d, int(j)))
+    seen = set()
+    while heap and len(seen) < 400000:
+        d, i = heapq.heappop(heap)
+        if i in seen or d > dist.get(i, 1e18):
+            continue
+        seen.add(i)
+        for j in dst[start[i]:start[i + 1]]:
+            j = int(j)
+            if labels[j] == k or j in seen:
+                continue
+            nd = d + float(np.linalg.norm(cen[j] - cen[i]))
+            if nd <= depth and nd < dist.get(j, 1e18):
+                dist[j] = nd
+                heapq.heappush(heap, (nd, j))
+    return np.array(sorted(seen), dtype=np.int64)
+
+
+def split_mesh_by_color(mesh, face_rgb, tolerance=0.0, overlap=0.0):
+    """Une pièce par couleur : [{'rgb', 'vertices', 'faces', 'count'}], de la plus grande à la plus petite.
+    overlap (mm) : chaque pièce reprend en plus une bande de `overlap` mm de la surface voisine (emboîtement)."""
     labels, colors, sizes = _group_colors(face_rgb, tolerance)
     verts = np.asarray(mesh.vertices, dtype=float)
     faces = np.asarray(mesh.faces)
     out = []
     for k, rgb in enumerate(colors):
-        sel = faces[labels == k]
+        mask = labels == k
+        if overlap > 0 and len(colors) > 1:
+            extra = _band_faces(verts, faces, labels, k, overlap)
+            if len(extra):
+                mask = mask.copy()
+                mask[extra] = True
+        sel = faces[mask]
         used, inv = np.unique(sel, return_inverse=True)
         out.append({'rgb': rgb, 'vertices': verts[used], 'faces': inv.reshape(-1, 3), 'count': int(sizes[k])})
     return out
@@ -309,6 +428,7 @@ def api_split_color_3mf():
         bed_w = float(data.get('bed_width') or 220)
         bed_d = float(data.get('bed_height') or 220)
         tol = min(max(float(data.get('tolerance') or 0), 0.0), 100.0)
+        overlap = min(max(float(data.get('overlap') or 0), 0.0), 50.0)
     except (TypeError, ValueError):
         return jsonify({"error": "Paramètres invalides"}), 400
     if bed_w < 20 or bed_d < 20:
@@ -319,7 +439,7 @@ def api_split_color_3mf():
         return jsonify({"error": "Fichier introuvable"}), 404
     try:
         mesh, face_rgb = _load_colored_mesh(path)
-        pieces = split_mesh_by_color(mesh, face_rgb, tol)
+        pieces = split_mesh_by_color(mesh, face_rgb, tol, overlap)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
@@ -410,6 +530,8 @@ def _owner_post(fn):
 
 _ROUTES = (
     ('/api/x/split-color/files', ['GET'], 'api_split_color_files', ('login_required', )),
+    ('/api/x/split-color/folders', ['GET'], 'api_split_color_folders', ('login_required', )),
+    ('/api/x/split-color/mkdir', ['POST'], 'api_split_color_mkdir', ('login_required', '_owner_post')),
     ('/api/x/split-color/split', ['POST'], 'api_split_color_3mf', ('login_required', '_owner_post')),
 )
 

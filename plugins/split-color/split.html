@@ -1,6 +1,7 @@
 <style>
 :root{color-scheme:light dark}
-body{margin:0;padding:16px;background:var(--st-bg,#111);color:var(--st-text,#eee);font:14px/1.5 system-ui,sans-serif}
+html,body{background:transparent}
+body{margin:0;padding:16px;color:var(--st-text,#eee);font:14px/1.5 system-ui,sans-serif}
 h1{font-size:18px;margin:0 0 4px}
 p.sub{margin:0 0 14px;color:var(--st-muted,#999)}
 .card{background:var(--st-card,#1b1b1b);border:1px solid var(--st-border,#333);border-radius:8px;padding:14px;margin-bottom:12px}
@@ -17,6 +18,15 @@ button:disabled{opacity:.5;cursor:default}
 .files .th img{width:100%;height:100%;object-fit:contain;display:block}
 .files .nm{padding:5px 7px;font-size:12px;line-height:1.25;word-break:break-all;max-height:3.9em;overflow:hidden}
 .files .none{grid-column:1/-1;padding:6px}
+#dest{display:none;flex:2 1 320px}
+.crumb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:2px 0 6px;font-size:13px}
+.crumb button{padding:2px 8px;font-size:12px}
+.dirs{max-height:170px;overflow:auto;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.dirs div{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--st-border,#333);display:flex;gap:8px;align-items:center}
+.dirs div:last-child{border-bottom:0}.dirs div:hover{background:color-mix(in srgb,var(--st-accent,#4ea1d3) 16%,transparent)}
+.dirs .none{cursor:default;opacity:.7}.dirs .none:hover{background:none}
+.mk{display:flex;gap:8px;margin-top:8px}.mk input{flex:1}
+.here{margin-top:6px;font-size:12px;opacity:.85}
 #view{display:none;margin-top:14px}
 #view .hint{font-size:12px;opacity:.7;margin-bottom:8px}
 #view .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
@@ -45,8 +55,18 @@ button:disabled{opacity:.5;cursor:default}
     <div><label id="t_tol"></label><input id="tol" type="number" min="0" max="100" step="5" value="0"></div>
   </div>
   <div class="row">
+    <div><label id="t_ov"></label><input id="ov" type="number" min="0" max="50" step="0.5" value="0"></div>
+    <div><label>&nbsp;</label><span class="hint" id="t_ovh" style="font-size:12px;opacity:.7"></span></div>
+  </div>
+  <div class="row">
     <div><label id="t_src"></label><select id="src"></select></div>
-    <div><label id="t_sub"></label><input id="sub" placeholder="Couleurs/projets"></div>
+    <div id="dest"><label id="t_sub"></label>
+      <div class="crumb" id="crumb"></div>
+      <div class="dirs" id="dirs"></div>
+      <div class="mk"><input id="newdir" maxlength="80"><button type="button" id="mkdir"></button></div>
+      <div class="here" id="here"></div>
+      <input id="sub" type="hidden">
+    </div>
   </div>
   <div class="row">
     <div><label id="t_bw"></label><input id="bw" type="number" min="50" value="220"></div>
@@ -62,19 +82,19 @@ button:disabled{opacity:.5;cursor:default}
 </div>
 <script>
 const T={
-fr:{view:'Aperçu du résultat : un plateau par couleur (glissez pour faire pivoter)',all:'Modèle complet',title:'Séparer par couleur',intro:'Choisissez un 3MF multicolore : un nouveau 3MF est créé avec un plateau par couleur (le fichier d\'origine n\'est pas modifié).',search:'Rechercher un 3MF de la bibliothèque',name:'Nom du nouveau fichier',tol:'Regrouper les couleurs proches (0 = exact)',src:'Enregistrer dans (source)',sub:'Sous-dossier (facultatif)',bw:'Largeur plateau (mm)',bd:'Profondeur plateau (mm)',analyze:'Analyser les couleurs',run:'Créer le 3MF par couleur',pick:'Choisissez d\'abord un fichier.',busy:'Traitement…',found:'{n} couleurs détectées',done:'{p} plateaux créés dans {f}',big:'Attention : le modèle dépasse le plateau indiqué.',none:'Aucun 3MF trouvé.',same:'Dossier du fichier d\'origine',def:'couleur par défaut'},
-en:{view:'Result preview: one plate per color (drag to rotate)',all:'Full model',title:'Split by color',intro:'Pick a multicolor 3MF: a new 3MF is created with one plate per color (the original file is not modified).',search:'Search a 3MF in the library',name:'New file name',tol:'Group similar colors (0 = exact)',src:'Save to (source)',sub:'Subfolder (optional)',bw:'Bed width (mm)',bd:'Bed depth (mm)',analyze:'Analyze colors',run:'Create the per-color 3MF',pick:'Pick a file first.',busy:'Working…',found:'{n} colors detected',done:'{p} plates created in {f}',big:'Warning: the model is larger than the bed given.',none:'No 3MF found.',same:'Folder of the original file',def:'default color'},
-de:{view:'Vorschau des Ergebnisses: eine Platte pro Farbe (zum Drehen ziehen)',all:'Gesamtmodell',title:'Nach Farbe trennen',intro:'Wählen Sie eine mehrfarbige 3MF: Es entsteht eine neue 3MF mit einer Platte pro Farbe (die Originaldatei bleibt unverändert).',search:'3MF in der Bibliothek suchen',name:'Name der neuen Datei',tol:'Ähnliche Farben zusammenfassen (0 = exakt)',src:'Speichern in (Quelle)',sub:'Unterordner (optional)',bw:'Plattenbreite (mm)',bd:'Plattentiefe (mm)',analyze:'Farben analysieren',run:'3MF pro Farbe erstellen',pick:'Wählen Sie zuerst eine Datei.',busy:'Wird verarbeitet…',found:'{n} Farben erkannt',done:'{p} Platten erstellt in {f}',big:'Achtung: Das Modell ist größer als die Platte.',none:'Keine 3MF gefunden.',same:'Ordner der Originaldatei',def:'Standardfarbe'},
-es:{view:'Vista previa del resultado: una bandeja por color (arrastre para girar)',all:'Modelo completo',title:'Separar por color',intro:'Elija un 3MF multicolor: se crea un nuevo 3MF con una bandeja por color (el archivo original no se modifica).',search:'Buscar un 3MF de la biblioteca',name:'Nombre del nuevo archivo',tol:'Agrupar colores parecidos (0 = exacto)',src:'Guardar en (fuente)',sub:'Subcarpeta (opcional)',bw:'Ancho de bandeja (mm)',bd:'Fondo de bandeja (mm)',analyze:'Analizar colores',run:'Crear el 3MF por color',pick:'Elija primero un archivo.',busy:'Procesando…',found:'{n} colores detectados',done:'{p} bandejas creadas en {f}',big:'Atención: el modelo supera la bandeja indicada.',none:'No se encontró ningún 3MF.',same:'Carpeta del archivo original',def:'color por defecto'},
-it:{view:'Anteprima del risultato: un piatto per colore (trascina per ruotare)',all:'Modello completo',title:'Separa per colore',intro:'Scegli un 3MF multicolore: viene creato un nuovo 3MF con un piatto per colore (il file originale non viene modificato).',search:'Cerca un 3MF nella libreria',name:'Nome del nuovo file',tol:'Raggruppa colori simili (0 = esatto)',src:'Salva in (sorgente)',sub:'Sottocartella (facoltativa)',bw:'Larghezza piatto (mm)',bd:'Profondità piatto (mm)',analyze:'Analizza i colori',run:'Crea il 3MF per colore',pick:'Scegli prima un file.',busy:'Elaborazione…',found:'{n} colori rilevati',done:'{p} piatti creati in {f}',big:'Attenzione: il modello supera il piatto indicato.',none:'Nessun 3MF trovato.',same:'Cartella del file originale',def:'colore predefinito'},
-pt:{view:'Pré-visualização do resultado: uma mesa por cor (arraste para rodar)',all:'Modelo completo',title:'Separar por cor',intro:'Escolha um 3MF multicolor: é criado um novo 3MF com uma mesa por cor (o ficheiro original não é alterado).',search:'Procurar um 3MF na biblioteca',name:'Nome do novo ficheiro',tol:'Agrupar cores semelhantes (0 = exato)',src:'Guardar em (origem)',sub:'Subpasta (opcional)',bw:'Largura da mesa (mm)',bd:'Profundidade da mesa (mm)',analyze:'Analisar cores',run:'Criar o 3MF por cor',pick:'Escolha primeiro um ficheiro.',busy:'A processar…',found:'{n} cores detetadas',done:'{p} mesas criadas em {f}',big:'Atenção: o modelo excede a mesa indicada.',none:'Nenhum 3MF encontrado.',same:'Pasta do ficheiro original',def:'cor predefinida'},
-zh:{view:'结果预览：每种颜色一个盘（拖动可旋转）',all:'完整模型',title:'按颜色拆分',intro:'选择一个多色 3MF：将创建新的 3MF，每种颜色一个盘（不会修改原文件）。',search:'在库中搜索 3MF',name:'新文件名',tol:'合并相近颜色（0 = 精确）',src:'保存到（来源）',sub:'子文件夹（可选）',bw:'打印盘宽度 (mm)',bd:'打印盘深度 (mm)',analyze:'分析颜色',run:'创建按颜色拆分的 3MF',pick:'请先选择文件。',busy:'处理中…',found:'检测到 {n} 种颜色',done:'已在 {f} 中创建 {p} 个盘',big:'注意：模型超出所填的打印盘。',none:'未找到 3MF。',same:'原文件所在文件夹',def:'默认颜色'},
-ja:{view:'結果のプレビュー：色ごとに 1 プレート（ドラッグで回転）',all:'モデル全体',title:'色で分割',intro:'マルチカラー 3MF を選択すると、色ごとに 1 プレートの新しい 3MF を作成します（元のファイルは変更されません）。',search:'ライブラリから 3MF を検索',name:'新しいファイル名',tol:'近い色をまとめる（0 = 完全一致）',src:'保存先（ソース）',sub:'サブフォルダ（任意）',bw:'プレート幅 (mm)',bd:'プレート奥行 (mm)',analyze:'色を解析',run:'色別の 3MF を作成',pick:'先にファイルを選択してください。',busy:'処理中…',found:'{n} 色を検出',done:'{f} に {p} プレートを作成しました',big:'注意：モデルが指定のプレートを超えています。',none:'3MF が見つかりません。',same:'元ファイルのフォルダ',def:'既定の色'}};
+fr:{dest:'Dossier de destination',newdir:'Nom du nouveau dossier',mk:'Créer le dossier',nofold:'Aucun sous-dossier',here:'Enregistrement dans : ',ov:'Chevauchement sur la pièce voisine (mm)',ovh:'Chaque pièce reprend une bande de cette largeur de la surface voisine (ex. la main déborde dans le bras). 0 = aucun.',view:'Aperçu du résultat : un plateau par couleur (glissez pour faire pivoter)',all:'Modèle complet',title:'Séparer par couleur',intro:'Choisissez un 3MF multicolore : un nouveau 3MF est créé avec un plateau par couleur (le fichier d\'origine n\'est pas modifié).',search:'Rechercher un 3MF de la bibliothèque',name:'Nom du nouveau fichier',tol:'Regrouper les couleurs proches (0 = exact)',src:'Enregistrer dans (source)',sub:'Sous-dossier (facultatif)',bw:'Largeur plateau (mm)',bd:'Profondeur plateau (mm)',analyze:'Analyser les couleurs',run:'Créer le 3MF par couleur',pick:'Choisissez d\'abord un fichier.',busy:'Traitement…',found:'{n} couleurs détectées',done:'{p} plateaux créés dans {f}',big:'Attention : le modèle dépasse le plateau indiqué.',none:'Aucun 3MF trouvé.',same:'Dossier du fichier d\'origine',def:'couleur par défaut'},
+en:{dest:'Destination folder',newdir:'New folder name',mk:'Create folder',nofold:'No subfolder',here:'Saving in: ',ov:'Overlap into the neighbouring piece (mm)',ovh:'Each piece also takes a band of this width from the neighbouring surface (e.g. the hand extends into the arm). 0 = none.',view:'Result preview: one plate per color (drag to rotate)',all:'Full model',title:'Split by color',intro:'Pick a multicolor 3MF: a new 3MF is created with one plate per color (the original file is not modified).',search:'Search a 3MF in the library',name:'New file name',tol:'Group similar colors (0 = exact)',src:'Save to (source)',sub:'Subfolder (optional)',bw:'Bed width (mm)',bd:'Bed depth (mm)',analyze:'Analyze colors',run:'Create the per-color 3MF',pick:'Pick a file first.',busy:'Working…',found:'{n} colors detected',done:'{p} plates created in {f}',big:'Warning: the model is larger than the bed given.',none:'No 3MF found.',same:'Folder of the original file',def:'default color'},
+de:{dest:'Zielordner',newdir:'Name des neuen Ordners',mk:'Ordner erstellen',nofold:'Kein Unterordner',here:'Speichern in: ',ov:'Überlappung in das Nachbarteil (mm)',ovh:'Jedes Teil übernimmt zusätzlich einen Streifen dieser Breite der Nachbarfläche (z. B. die Hand reicht in den Arm). 0 = keine.',view:'Vorschau des Ergebnisses: eine Platte pro Farbe (zum Drehen ziehen)',all:'Gesamtmodell',title:'Nach Farbe trennen',intro:'Wählen Sie eine mehrfarbige 3MF: Es entsteht eine neue 3MF mit einer Platte pro Farbe (die Originaldatei bleibt unverändert).',search:'3MF in der Bibliothek suchen',name:'Name der neuen Datei',tol:'Ähnliche Farben zusammenfassen (0 = exakt)',src:'Speichern in (Quelle)',sub:'Unterordner (optional)',bw:'Plattenbreite (mm)',bd:'Plattentiefe (mm)',analyze:'Farben analysieren',run:'3MF pro Farbe erstellen',pick:'Wählen Sie zuerst eine Datei.',busy:'Wird verarbeitet…',found:'{n} Farben erkannt',done:'{p} Platten erstellt in {f}',big:'Achtung: Das Modell ist größer als die Platte.',none:'Keine 3MF gefunden.',same:'Ordner der Originaldatei',def:'Standardfarbe'},
+es:{dest:'Carpeta de destino',newdir:'Nombre de la nueva carpeta',mk:'Crear carpeta',nofold:'Sin subcarpetas',here:'Guardar en: ',ov:'Solapamiento sobre la pieza vecina (mm)',ovh:'Cada pieza toma además una banda de este ancho de la superficie vecina (p. ej. la mano entra en el brazo). 0 = ninguno.',view:'Vista previa del resultado: una bandeja por color (arrastre para girar)',all:'Modelo completo',title:'Separar por color',intro:'Elija un 3MF multicolor: se crea un nuevo 3MF con una bandeja por color (el archivo original no se modifica).',search:'Buscar un 3MF de la biblioteca',name:'Nombre del nuevo archivo',tol:'Agrupar colores parecidos (0 = exacto)',src:'Guardar en (fuente)',sub:'Subcarpeta (opcional)',bw:'Ancho de bandeja (mm)',bd:'Fondo de bandeja (mm)',analyze:'Analizar colores',run:'Crear el 3MF por color',pick:'Elija primero un archivo.',busy:'Procesando…',found:'{n} colores detectados',done:'{p} bandejas creadas en {f}',big:'Atención: el modelo supera la bandeja indicada.',none:'No se encontró ningún 3MF.',same:'Carpeta del archivo original',def:'color por defecto'},
+it:{dest:'Cartella di destinazione',newdir:'Nome della nuova cartella',mk:'Crea cartella',nofold:'Nessuna sottocartella',here:'Salvataggio in: ',ov:'Sovrapposizione sul pezzo vicino (mm)',ovh:'Ogni pezzo include anche una fascia di questa larghezza della superficie vicina (es. la mano entra nel braccio). 0 = nessuna.',view:'Anteprima del risultato: un piatto per colore (trascina per ruotare)',all:'Modello completo',title:'Separa per colore',intro:'Scegli un 3MF multicolore: viene creato un nuovo 3MF con un piatto per colore (il file originale non viene modificato).',search:'Cerca un 3MF nella libreria',name:'Nome del nuovo file',tol:'Raggruppa colori simili (0 = esatto)',src:'Salva in (sorgente)',sub:'Sottocartella (facoltativa)',bw:'Larghezza piatto (mm)',bd:'Profondità piatto (mm)',analyze:'Analizza i colori',run:'Crea il 3MF per colore',pick:'Scegli prima un file.',busy:'Elaborazione…',found:'{n} colori rilevati',done:'{p} piatti creati in {f}',big:'Attenzione: il modello supera il piatto indicato.',none:'Nessun 3MF trovato.',same:'Cartella del file originale',def:'colore predefinito'},
+pt:{dest:'Pasta de destino',newdir:'Nome da nova pasta',mk:'Criar pasta',nofold:'Sem subpastas',here:'A guardar em: ',ov:'Sobreposição na peça vizinha (mm)',ovh:'Cada peça inclui também uma faixa desta largura da superfície vizinha (ex. a mão entra no braço). 0 = nenhuma.',view:'Pré-visualização do resultado: uma mesa por cor (arraste para rodar)',all:'Modelo completo',title:'Separar por cor',intro:'Escolha um 3MF multicolor: é criado um novo 3MF com uma mesa por cor (o ficheiro original não é alterado).',search:'Procurar um 3MF na biblioteca',name:'Nome do novo ficheiro',tol:'Agrupar cores semelhantes (0 = exato)',src:'Guardar em (origem)',sub:'Subpasta (opcional)',bw:'Largura da mesa (mm)',bd:'Profundidade da mesa (mm)',analyze:'Analisar cores',run:'Criar o 3MF por cor',pick:'Escolha primeiro um ficheiro.',busy:'A processar…',found:'{n} cores detetadas',done:'{p} mesas criadas em {f}',big:'Atenção: o modelo excede a mesa indicada.',none:'Nenhum 3MF encontrado.',same:'Pasta do ficheiro original',def:'cor predefinida'},
+zh:{dest:'目标文件夹',newdir:'新文件夹名称',mk:'创建文件夹',nofold:'没有子文件夹',here:'保存到：',ov:'与相邻部件的重叠（毫米）',ovh:'每个部件还会带上相邻表面这一宽度的一条带（例如手伸入手臂）。0 = 无。',view:'结果预览：每种颜色一个盘（拖动可旋转）',all:'完整模型',title:'按颜色拆分',intro:'选择一个多色 3MF：将创建新的 3MF，每种颜色一个盘（不会修改原文件）。',search:'在库中搜索 3MF',name:'新文件名',tol:'合并相近颜色（0 = 精确）',src:'保存到（来源）',sub:'子文件夹（可选）',bw:'打印盘宽度 (mm)',bd:'打印盘深度 (mm)',analyze:'分析颜色',run:'创建按颜色拆分的 3MF',pick:'请先选择文件。',busy:'处理中…',found:'检测到 {n} 种颜色',done:'已在 {f} 中创建 {p} 个盘',big:'注意：模型超出所填的打印盘。',none:'未找到 3MF。',same:'原文件所在文件夹',def:'默认颜色'},
+ja:{dest:'保存先フォルダ',newdir:'新しいフォルダ名',mk:'フォルダを作成',nofold:'サブフォルダはありません',here:'保存先：',ov:'隣接パーツへの重なり（mm）',ovh:'各パーツは隣接する面から、この幅の帯も取り込みます（例：手が腕の中に入る）。0 = なし。',view:'結果のプレビュー：色ごとに 1 プレート（ドラッグで回転）',all:'モデル全体',title:'色で分割',intro:'マルチカラー 3MF を選択すると、色ごとに 1 プレートの新しい 3MF を作成します（元のファイルは変更されません）。',search:'ライブラリから 3MF を検索',name:'新しいファイル名',tol:'近い色をまとめる（0 = 完全一致）',src:'保存先（ソース）',sub:'サブフォルダ（任意）',bw:'プレート幅 (mm)',bd:'プレート奥行 (mm)',analyze:'色を解析',run:'色別の 3MF を作成',pick:'先にファイルを選択してください。',busy:'処理中…',found:'{n} 色を検出',done:'{f} に {p} プレートを作成しました',big:'注意：モデルが指定のプレートを超えています。',none:'3MF が見つかりません。',same:'元ファイルのフォルダ',def:'既定の色'}};
 let L='fr',sel=null,sources=[];
 const $=id=>document.getElementById(id),t=k=>(T[L]||T.en)[k]||T.en[k]||k;
 function esc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function labels(){const m={t_title:'title',t_intro:'intro',t_search:'search',t_name:'name',t_tol:'tol',t_src:'src',t_sub:'sub',t_bw:'bw',t_bd:'bd',t_view:'view'};
-  for(const k in m)$(k).textContent=t(m[k]);$('analyze').textContent=t('analyze');$('run').textContent=t('run');}
+function labels(){const m={t_title:'title',t_intro:'intro',t_search:'search',t_name:'name',t_tol:'tol',t_src:'src',t_sub:'dest',t_bw:'bw',t_bd:'bd',t_view:'view',t_ov:'ov',t_ovh:'ovh'};
+  for(const k in m)$(k).textContent=t(m[k]);$('analyze').textContent=t('analyze');$('run').textContent=t('run');$('newdir').placeholder=t('newdir');$('mkdir').textContent=t('mk');if($('here'))$('here').textContent=hereTxt();}
 function msg(txt,cls){const m=$('msg');m.textContent=txt;m.className=cls||'';m.style.display=txt?'block':'none'}
 const thumbs=new Map();
 function mime(b){const u=new Uint8Array(b);if(u[0]===0x89&&u[1]===0x50)return'image/png';if(u[0]===0xff&&u[1]===0xd8)return'image/jpeg';return'image/webp'}
@@ -99,7 +119,7 @@ async function search(){
     box.innerHTML=(d.files||[]).map((f,i)=>`<div class="f${sel&&sel.path===f.path?' sel':''}" data-i="${i}" title="${esc(f.path)}"><div class="th"><i>&#9638;</i></div><div class="nm">${esc(f.name)}</div></div>`).join('')||`<div class="none">${esc(t('none'))}</div>`;
     box.querySelectorAll('.f').forEach(el=>{const f=d.files[+el.dataset.i];lazy(el.querySelector('.th'),f.path);
       el.onclick=()=>{sel=f;box.querySelectorAll('.f').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');
-        $('name').value=sel.name.replace(/\.3mf$/i,'')+'_couleurs';$('chips').innerHTML='';renderView(null);$('run').disabled=true;msg('');showBig();}});
+        $('name').value=sel.name.replace(/\.3mf$/i,'')+'_couleurs';$('chips').innerHTML='';renderView(null);$('run').disabled=true;msg('');showBig();setTimeout(()=>{if(sel===f)$('analyze').click()},50);}});
   }catch(e){msg(e.message,'err')}
 }
 
@@ -142,8 +162,31 @@ function renderView(pv){
     add(p.hex+(c?' · '+c.percent+'%':''),[{hex:p.hex,q:pv.q,a:b}],p.hex,r)});
   box.style.display='block';redraw();
 }
-function body(extra){const s=$('src');return Object.assign({path:sel&&sel.path,bed_width:+$('bw').value||220,bed_height:+$('bd').value||220,tolerance:+$('tol').value||0,
-  filename:$('name').value.trim(),source_id:s.value,target_subfolder:$('sub').value.trim()},extra||{})}
+
+let cur='';          // sous-dossier courant (relatif à la source choisie)
+function hereTxt(){const o=$('src').selectedOptions[0];return t('here')+(o?o.textContent:'')+(cur?' / '+cur.split('/').join(' / '):'')}
+async function dirs(sub){
+  const id=$('src').value;if(!id){$('dest').style.display='none';cur='';$('sub').value='';return}
+  $('dest').style.display='block';
+  try{const d=await window.stellio.api('/api/x/split-color/folders?source_id='+encodeURIComponent(id)+'&sub='+encodeURIComponent(sub||''));
+    cur=d.sub||'';$('sub').value=cur;
+    const parts=cur?cur.split('/'):[],o=$('src').selectedOptions[0];
+    $('crumb').innerHTML='';
+    const add=(label,to)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>dirs(to);$('crumb').appendChild(b)};
+    add(o?o.textContent:'/','');parts.forEach((p,i)=>{$('crumb').appendChild(document.createTextNode('›'));add(p,parts.slice(0,i+1).join('/'))});
+    $('dirs').innerHTML='';
+    if(!d.folders.length){const n=document.createElement('div');n.className='none';n.textContent=t('nofold');$('dirs').appendChild(n)}
+    d.folders.forEach(f=>{const r=document.createElement('div');r.innerHTML='<i>&#128193;</i>';const s=document.createElement('span');s.textContent=f;r.appendChild(s);r.onclick=()=>dirs((cur?cur+'/':'')+f);$('dirs').appendChild(r)});
+    $('here').textContent=hereTxt();
+  }catch(e){msg(e.message,'err')}
+}
+async function makeDir(){
+  const name=$('newdir').value.trim();if(!name)return;
+  try{const d=await window.stellio.api('/api/x/split-color/mkdir','json',{method:'POST',body:{source_id:$('src').value,sub:cur,name}});
+    $('newdir').value='';await dirs(d.sub)}catch(e){msg(e.message,'err')}
+}
+function body(extra){const s=$('src');return Object.assign({path:sel&&sel.path,bed_width:+$('bw').value||220,bed_height:+$('bd').value||220,tolerance:+$('tol').value||0,overlap:+$('ov').value||0,
+  filename:$('name').value.trim(),source_id:s.value,target_subfolder:s.value?cur:''},extra||{})}
 function chips(cols){$('chips').innerHTML=(cols||[]).map(c=>`<span class="chip"><i style="background:${esc(c.hex)}"></i>${esc(c.hex)} · ${c.percent}%${c.default?' · '+esc(t('def')):''}</span>`).join('')}
 async function call(extra){return window.stellio.api('/api/x/split-color/split','json',{method:'POST',body:body(extra)})}
 $('analyze').onclick=async()=>{if(!sel)return msg(t('pick'),'err');msg(t('busy'));$('run').disabled=true;
@@ -152,10 +195,11 @@ $('analyze').onclick=async()=>{if(!sel)return msg(t('pick'),'err');msg(t('busy')
 $('run').onclick=async()=>{if(!sel)return msg(t('pick'),'err');msg(t('busy'));$('run').disabled=true;
   try{const d=await call();window.__cols=d.colors;renderView(d.preview);msg(t('done').replace('{p}',d.plate_count).replace('{f}',d.output_filename)+(d.too_big?' — '+t('big'):''),d.too_big?'err':'ok')}
   catch(e){msg(e.message,'err')}finally{$('run').disabled=false}};
-$('tol').onchange=()=>{if(sel)$('analyze').click()};
+$('tol').onchange=$('ov').onchange=()=>{if(sel)$('analyze').click()};
 let timer;$('q').oninput=()=>{clearTimeout(timer);timer=setTimeout(search,250)};
 document.addEventListener('stellio-ready',async()=>{L=(window.stellio.lang||'fr').slice(0,2);if(!T[L])L='en';labels();
   try{sources=await window.stellio.api('/api/sources')}catch(e){sources=[]}
-  $('src').innerHTML=`<option value="">${esc(t('same'))}</option>`+sources.map(s=>`<option value="${esc(s.id)}">${esc(s.name||s.path)}</option>`).join('');search()});
+  $('src').innerHTML=`<option value="">${esc(t('same'))}</option>`+sources.map(s=>`<option value="${esc(s.id)}">${esc(s.name||s.path)}</option>`).join('');search()
+  $('src').onchange=()=>dirs('');$('mkdir').onclick=makeDir;$('newdir').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();makeDir()}};});
 labels();
 </script>
