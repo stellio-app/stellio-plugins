@@ -633,7 +633,7 @@ def _bodies(f_ids):
     return np.split(order, cuts)
 
 
-def _absorb_strays(labels, f_ids, frac=0.006, min_faces=80):
+def _absorb_strays(labels, f_ids, frac=0.006, min_faces=80, verts=None, faces=None, tiny_volume=40.0):
     """Un corps déjà fermé et (presque) monocolore reste ENTIER, avec sa couleur dominante : quelques faces d'une autre couleur
     (franges de peinture) ne le découpent pas. Renvoie (étiquettes corrigées, corps réellement multicolores)."""
     labels = labels.copy()
@@ -654,6 +654,13 @@ def _absorb_strays(labels, f_ids, frac=0.006, min_faces=80):
             for part in _components(f_ids[idx]):
                 if len(part) < min_faces:
                     labels[idx[part]] = main
+        if len(np.unique(labels[comp])) > 1 and verts is not None:
+            t = verts[faces[comp]]                          # volume (mm³) du corps : trop petit pour être coupé en deux pièces imprimables
+            vol = abs(float(np.einsum('ij,ij->', t[:, 0], np.cross(t[:, 1], t[:, 2])) / 6.0))
+            if vol < tiny_volume:
+                u = np.unique(labels[comp])
+                cnt2 = np.bincount(labels[comp], minlength=int(u.max()) + 1)
+                labels[comp] = int(cnt2.argmax())           # petit corps (griffe…) : une seule pièce, couleur dominante
         if len(np.unique(labels[comp])) > 1:
             mixed.append(comp)
     return labels, mixed
@@ -752,14 +759,17 @@ def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=
     orig = dict(solids)
     ids = sorted(orig)
     boxes = {r: orig[r].bounding_box() for r in ids}
-    touched, down, pegs = [], {}, 0
+    touched, down, pegs, pegged = [], {}, 0, set()
+    pairs = []
     for i, a in enumerate(ids):
         for b in ids[i + 1:]:
             if region_color[a] == region_color[b] or not _bbox_overlap(boxes[a], boxes[b]):
                 continue
             inter = orig[a] ^ orig[b]
-            if inter.volume() < min_volume:
-                continue
+            if inter.volume() >= min_volume:
+                pairs.append((inter.volume(), a, b, inter))
+    for _vol, a, b, inter in sorted(pairs, key=lambda x: -x[0]):          # le plus gros contact d'abord : c'est lui qui reçoit le tenon
+        if True:
             small, big = (a, b) if orig[a].volume() <= orig[b].volume() else (b, a)
             pts = np.array(inter.to_mesh().vert_properties[:, :3], dtype=float)
             c = pts.mean(axis=0)
@@ -786,7 +796,9 @@ def carve_seats(solids, region_color, clearance=0.15, min_volume=2.0, depth_pct=
             res = solids[big] - cutter
             if res.is_empty() or res.volume() < 0.2 * solids[big].volume():
                 continue
-            if spec and small in down:                       # tenons de positionnement : sur le fond du logement (grande pièce), trou dans la base plane de la petite
+            if spec and small in down and small not in pegged:   # UN seul tenon par pièce rapportée (corne, œil…), sur son plus gros contact
+                pegged.add(small)
+                # tenons de positionnement : sur le fond du logement (grande pièce), trou dans la base plane de la petite
                 try:
                     res, top, k = _seat_pegs(res, top, n, level, **spec)
                     if k:
@@ -819,7 +831,7 @@ def _seat_pegs(big, small, n, level, size=0.0, length=0.0, clearance=0.2):
     ln = float(length) if length and length > 0 else min(max(side * 1.1, 2.0), 5.0)
     embed, bevel = 1.5, min(0.5, side / 4.0)
     frame = _frame(e1, np.cross(n, e1), n)
-    offs = [-0.25 * ext1, 0.25 * ext1] if ext1 > 3.2 * side + 1.2 else [0.0]
+    offs = [0.0]                                             # un seul tenon, centré
     made = 0
     for off in offs:
         spot = c0 + e1 * off
@@ -841,7 +853,7 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
     region, region_color, f_ids, coords = _regions(mesh, labels)
     verts = np.asarray(mesh.vertices, dtype=float)
     faces = np.asarray(mesh.faces)
-    labels, mixed = _absorb_strays(labels, f_ids)
+    labels, mixed = _absorb_strays(labels, f_ids, verts=verts, faces=faces)
     region, region_color, f_ids, coords = _regions(mesh, labels)
     stats = {'filled': 0, 'open': 0, 'nonmanifold': 0}
     shells = {}
