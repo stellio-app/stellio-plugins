@@ -21,8 +21,8 @@
       "version": "1.0.5",
       "author": "Stellio",
       "url": "https://github.com/stellio-app/stellio-plugins/releases/download/split-color-1.0.5/split-color-1.0.5.zip",
-      "sha256": "b9fce84f718d032cc3eb3999c1a2cd60bc66b6f428b25af486cf6aa0cfe90eb3",
-      "signature": "583eb3cfaa5da47a50847ee8eb4d62952009372ee2364bc4dd36a7af975dbec6bb8bb9b1295949b8a755939dca115bbdc7458778a98daed9cfa6bb12e491ae0e",
+      "sha256": "0b382b353adcdd00b0e71ebb2520b2ea7d9584b5ed8e3282392a9dca4fe07241",
+      "signature": "d5031ea5053d7968e62cc3d1454d4ee40a32c4bd4dab5386bd5cab02bb1c566c90fc0311441f0d0dcbfa26e2cb0eb55636f9d7b6015dac43647793fe8fae5a0b",
       "permissions": [
         "ui",
         "api:read",
