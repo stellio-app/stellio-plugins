@@ -647,6 +647,13 @@ def _absorb_strays(labels, f_ids, frac=0.006, min_faces=80):
         for k in nz:
             if k != main and cnt[k] < max(min_faces, frac * len(comp)):
                 labels[comp[labels[comp] == k]] = main
+        for k in np.unique(labels[comp]):                  # îlots minuscules d'une couleur dans un même corps : absorbés aussi
+            if k == main:
+                continue
+            idx = comp[labels[comp] == k]
+            for part in _components(f_ids[idx]):
+                if len(part) < min_faces:
+                    labels[idx[part]] = main
         if len(np.unique(labels[comp])) > 1:
             mixed.append(comp)
     return labels, mixed
@@ -663,7 +670,7 @@ def _split_body_by_planes(verts, faces, f_ids, coords, labels, comp):
     labs = labels[comp]
     ks = [int(k) for k in np.unique(labs)]
     ks.sort(key=lambda k: -int((labs == k).sum()))
-    remaining, out = S, {}
+    remaining, out, down = S, {}, {}
     for k in ks[1:]:
         fk, fo = comp[labs == k], comp[labs != k]
         bd = np.array(sorted(set(f_ids[fk].ravel().tolist()) & set(f_ids[fo].ravel().tolist())))
@@ -681,9 +688,60 @@ def _split_body_by_planes(verts, faces, f_ids, coords, labels, comp):
         above, below = remaining.split_by_plane(n.tolist(), float(np.dot(n, c)))
         if above.is_empty() or below.is_empty():
             return None
+        if above.volume() < 8.0:                           # reflet minuscule : on creuse un peu plus pour avoir au moins 0,5 mm d'épaisseur (imprimable)
+            pa = np.array(above.to_mesh().vert_properties[:, :3], dtype=float)
+            depth = float((pa @ n).max() - np.dot(n, c))
+            if depth < 0.5:
+                a2, b2 = remaining.split_by_plane(n.tolist(), float(np.dot(n, c)) - (0.5 - depth))
+                if not a2.is_empty() and not b2.is_empty():
+                    above, below = a2, b2
         out[k], remaining = above, below
+        down[k] = -n                                       # sa face de coupe (plane) vers le plateau
     out[ks[0]] = remaining
-    return {k: _unsolid(m) for k, m in out.items()}
+    return {k: _unsolid(m) for k, m in out.items()}, down
+
+
+def _rot_down(d):
+    """Matrice de rotation qui amène le vecteur d sur -Z (la face de coupe vers le plateau)."""
+    a = np.asarray(d, dtype=float); a = a / (np.linalg.norm(a) or 1.0)
+    b = np.array([0.0, 0.0, -1.0])
+    c = float(a @ b)
+    if c > 1 - 1e-9:
+        return np.eye(3)
+    if c < -1 + 1e-9:
+        return np.diag([1.0, -1.0, -1.0])
+    v = np.cross(a, b)
+    k = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + k + k @ k / (1 + c)
+
+
+def _trim_rim(v, f, max_frac=0.02, max_faces=250000):
+    """Bord vif plan (orbite d'un œil, ouverture d'un creux) : son pourtour est déchiqueté dans le modèle d'origine. On le coupe par un plan
+    juste en dessous du bruit : face droite et lisse. Renvoie ((sommets, faces), direction de la face coupée) ou None."""
+    if len(f) > max_faces:
+        return None
+    import trimesh
+    m = trimesh.Trimesh(v, f, process=False)
+    sel = m.face_adjacency_angles > np.radians(40)
+    vs = np.unique(m.face_adjacency_edges[sel])
+    if len(vs) < 40:
+        return None
+    P = v[vs]
+    c = P.mean(axis=0)
+    _u, sv, vt = np.linalg.svd(P - c, full_matrices=False)
+    if sv[2] > 0.08 * sv[0] or float(np.ptp((P - c) @ vt[0])) < 6.0:
+        return None
+    n = vt[2] / (np.linalg.norm(vt[2]) or 1.0)
+    if float(np.dot(v.mean(axis=0) - c, n)) < 0:
+        n = -n                                             # n pointe vers le corps
+    S = _solid(v, f)
+    if S is None:
+        return None
+    off = float(np.dot(n, c)) + float(((P - c) @ n).max())
+    above, _below = S.split_by_plane(n.tolist(), off)
+    if above.is_empty() or S.volume() - above.volume() > max_frac * S.volume():
+        return None
+    return _unsolid(above), -n
 
 
 def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
@@ -697,9 +755,11 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
     region, region_color, f_ids, coords = _regions(mesh, labels)
     stats = {'filled': 0, 'open': 0, 'nonmanifold': 0}
     shells = {}
+    orient = {}
     for comp in mixed:
         try:
-            pieces = _split_body_by_planes(verts, faces, f_ids, coords, labels, comp)
+            res = _split_body_by_planes(verts, faces, f_ids, coords, labels, comp)
+            pieces, pdown = res if res else (None, {})
             regs = {}
             for r in np.unique(region[comp]):
                 if r >= 0:
@@ -708,6 +768,8 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
                 continue
             for k, (v, f) in pieces.items():
                 shells[regs[k][0]] = (v, f)
+                if k in pdown:
+                    orient[regs[k][0]] = pdown[k]
         except Exception as e:
             app_logger.warning(f"[Séparation couleur] coupe plane impossible : {e}")
     for r in range(len(region_color)):
@@ -719,6 +781,16 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
         for k in stats:
             stats[k] += st[k]
         shells[r] = (v, f)
+    for r in list(shells):
+        if r in orient:
+            continue
+        try:
+            res = _trim_rim(*shells[r])
+        except Exception as e:
+            app_logger.warning(f"[Séparation couleur] bord non redressé : {e}")
+            res = None
+        if res:
+            shells[r], orient[r] = res
     conn = {'made': 0, 'skipped': 0, 'error': None}
     if spec and len(region_color) > 1:
         try:
@@ -741,11 +813,16 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
             conn['error'] = str(e)
     per_color, fits = {}, True
     for k in range(len(colors)):
-        keep = []
+        keep, flat = [], []
         for r in range(len(region_color)):
             if region_color[r] != k:
                 continue
             v, f = shells[r]
+            if r in orient:                                 # pièce à face de coupe plane : posée à plat sur le plateau, hors regroupement
+                R = _rot_down(orient[r])
+                ctr = v.mean(axis=0)
+                flat.append(((v - ctr) @ R.T, f))
+                continue
             try:
                 from scipy.sparse import coo_matrix
                 from scipy.sparse.csgraph import connected_components
@@ -763,7 +840,7 @@ def _regions_pipeline(mesh, face_rgb, tol, spec, bed_w, bed_d, merge_gap=5.0):
                             keep.append((v[u], inv.reshape(-1, 3)))
             except Exception:
                 keep.append((v, f))
-        sh = _group_shells(keep, merge_gap)
+        sh = _group_shells(keep, merge_gap) + flat
         if not sh:
             continue
         objs, ok = _arrange(sh, bed_w, bed_d)
