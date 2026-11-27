@@ -9,7 +9,7 @@
   :root { --bg: var(--st-bg, #1a1d23); --panel: var(--st-panel, #22262e); --card: var(--st-card, #2d3240); --hover: var(--st-hover, #363c4a); --text: var(--st-text, #e8e9eb); --muted: var(--st-muted, #9ca0ab); --border: var(--st-border, #363c4a); --accent: var(--st-accent, #4ea1d3); }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; overflow: hidden; }
-  body { background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: flex; }
+  body { background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: flex; border: 1px solid var(--border); border-radius: 8px; }
   button, input, select { font: inherit; color: var(--text); }
   /* liste des fichiers */
   #files { width: 250px; flex: none; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
@@ -58,6 +58,8 @@
   .bar select { padding: 5px 6px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); }
   .stats { display: flex; gap: 16px; flex-wrap: wrap; padding: 6px 12px; color: var(--muted); font-size: 12px; background: var(--panel); border-top: 1px solid var(--border); }
   .stats b { color: var(--text); font-weight: 600; }
+  /* rien à montrer tant qu'aucun G-code n'est ouvert : ni bandeau de statistiques vide, ni pastille d'infos */
+  body:not(.loaded) .stats, body:not(.loaded) #info { display: none; }
   @media (max-width: 800px) { #files { position: absolute; z-index: 5; inset: 0 auto 0 0; width: 78%; } #opts { right: 62px; width: 180px; } #info { max-width: 60%; } }
 </style>
 </head>
@@ -328,6 +330,7 @@
     $('mlbl').textContent = S.moves + ' / ' + (M.layerStart[S.hi] - M.layerStart[S.hi - 1]) + ' ' + L.moves.toLowerCase();
   }
   function stats() {
+    document.body.classList.toggle('loaded', !!M);
     var s = $('stats'); s.textContent = ''; if (!M) return;
     var grams = M.fil * Math.PI * 0.875 * 0.875 * 1.24 / 1000;
     [[L.layers, M.layerZ.length], [L.height, M.maxZ.toFixed(1) + ' mm'], [L.size, (M.maxX - M.minX).toFixed(0) + ' × ' + (M.maxY - M.minY).toFixed(0) + ' mm'], [L.fil, (M.fil / 1000).toFixed(2) + ' m ≈ ' + grams.toFixed(0) + ' g'], [L.time, hms(M.time)], [L.segs, M.n.toLocaleString()]].forEach(function (p) {
@@ -391,7 +394,7 @@
     stop(); cur = f; M = null; var my = ++loadId; renderList(); msg(L.load); stats(); info(); draw();
     getText().then(function (t) { text = t; return parse(t, function (p) { if (my === loadId) msg(L.parse + Math.round(p * 100) + ' %'); }); }).then(function (m) {
       if (my !== loadId) return; if (!m) { msg(L.empty); return; }
-      M = m; msg(''); S.lo = 1; fitCam(); buildModelSets(); stats(); setHi(M.layerZ.length); if (window.innerWidth < 800) $('files').classList.add('off');
+      M = m; msg(''); S.lo = 1; fitCam(); buildModelSets(); stats(); setHi(M.layerZ.length); $('files').classList.add('off'); setTimeout(draw, 30);
     }).catch(function (e) { msg(L.err + e.message); });
   }
   function open(f) { load(f, function () { return window.stellio.api('/api/projects/gcodes/' + f.id + '/download', 'text'); }); }

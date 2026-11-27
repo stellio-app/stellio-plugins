@@ -1,7 +1,7 @@
 {
   "id": "gcode-viewer",
   "name": "G-code viewer",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "api": 1,
   "description": {
     "fr": "Visionneuse de G-code.",
