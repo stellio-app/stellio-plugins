@@ -3,17 +3,81 @@
     {
       "id": "gcode-viewer",
       "name": "G-code viewer",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": "Stellio",
-      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.2/gcode-viewer-1.0.2.zip",
-      "sha256": "449ae0eb8a66206c445c43f9c6cbbd3c28c316bd06cbf78667d0547fab95b18d",
-      "signature": "b0dafb2734caa00a3403fbf9ec7c885d82853ef114a40cd06f13004cec97567f8be5c67c44246849c431ad26737bd3434e276acb964437566336b2c284c6300a",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/gcode-viewer-1.0.3/gcode-viewer-1.0.3.zip",
+      "sha256": "a0b2ba2e74f9d6f4658f7b6a7d637814541dac6c05b0a357ad8bb288e155d21f",
+      "signature": "0f137f481992f2b1e079c80c0a9abd20c4d368c946d5b54e1e7e77a54a757f5f7a5894f0054d3a16185020b1e0050a0caf5f7368861ff93a3c7299969b47260e",
       "permissions": [
         "ui",
         "api:read"
       ],
       "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/gcode-viewer/logo.png",
       "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/gcode-viewer"
+    },
+    {
+      "id": "hollow-drain",
+      "name": "Hollow & drain",
+      "version": "1.0.1",
+      "author": "Stellio",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/hollow-drain-1.0.1/hollow-drain-1.0.1.zip",
+      "sha256": "c53777a363dc97b628941f6f8b9463a4f80199b26366bafb818fd47d9d23ccde",
+      "signature": "ec3124810a23fa262932823895db80d94c6a7577e4ccb917f92375d82779a6265d2efc991261412cdc284820bb129739692516510032d2c784ed6231c5346c0f",
+      "permissions": [
+        "ui",
+        "api:read",
+        "api:write"
+      ],
+      "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/hollow-drain/logo.png",
+      "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/hollow-drain"
+    },
+    {
+      "id": "mesh-cut",
+      "name": "3D cutter",
+      "version": "1.0.1",
+      "author": "Stellio",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/mesh-cut-1.0.1/mesh-cut-1.0.1.zip",
+      "sha256": "7b5f0877bb58a166ac137d25de9171fbd384c8f0f6ffc7268caeaa91c85cdde4",
+      "signature": "9ed4af8bd23e61cf9908e23340541d8ca7d8a4dfbda5c7bc4f4dac7bdba311b85be92b4cea6d8748549b3ac3dc5c089aa072ac3eae9486659c11853a22e5cb01",
+      "permissions": [
+        "ui",
+        "api:read",
+        "api:write"
+      ],
+      "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/mesh-cut/logo.png",
+      "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/mesh-cut"
+    },
+    {
+      "id": "paint-stock",
+      "name": "Filament painter",
+      "version": "1.0.1",
+      "author": "Stellio",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/paint-stock-1.0.1/paint-stock-1.0.1.zip",
+      "sha256": "669af639aa1b0b699783d1716616596c331b6ce09cee50d753d49b843258a95d",
+      "signature": "75bf35a6f5d6f5cfa3f9c07ca16eec958b5601e52b6cf25e2050be4a9ef018d62ca02abd6baddfc6e82ea3f4ccd45288dbcd0e8d85e2dff9f22a97aebb70260c",
+      "permissions": [
+        "ui",
+        "api:read",
+        "api:write"
+      ],
+      "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/paint-stock/logo.png",
+      "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/paint-stock"
+    },
+    {
+      "id": "split-color",
+      "name": "Split by color",
+      "version": "1.1.1",
+      "author": "Stellio",
+      "url": "https://github.com/stellio-app/stellio-plugins/releases/download/split-color-1.1.1/split-color-1.1.1.zip",
+      "sha256": "a63890f2510dd3a71f98f038c5733dea0be311dcd23182a70923b811ded0e8ca",
+      "signature": "b49fc7ede019594215bf3f13b2089d3e5568c9cc00fe5426356e02cee2870eab63a87762ba0beeedf84c037bf2703c7c7e995c60f10665892b6655916612c60f",
+      "permissions": [
+        "ui",
+        "api:read",
+        "api:write"
+      ],
+      "logo": "https://raw.githubusercontent.com/stellio-app/stellio-plugins/main/plugins/split-color/logo.png",
+      "homepage": "https://github.com/stellio-app/stellio-plugins/tree/main/plugins/split-color"
     }
   ]
 }
