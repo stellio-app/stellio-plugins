@@ -1,0 +1,32 @@
+{
+  "id": "paint-stock",
+  "name": "Filament painter",
+  "version": "1.0.1",
+  "api": 1,
+  "author": "Stellio",
+  "description": {
+    "fr": "Peint un modèle 3MF/STL avec les couleurs des bobines de ton stock et crée un 3MF multicolore.",
+    "en": "Paints a 3MF/STL model with the colors of your stock spools and creates a multicolor 3MF.",
+    "de": "Bemalt ein 3MF/STL-Modell mit den Farben deiner Spulen und erstellt eine mehrfarbige 3MF.",
+    "es": "Pinta un modelo 3MF/STL con los colores de tus bobinas y crea un 3MF multicolor.",
+    "pt": "Pinta um modelo 3MF/STL com as cores das bobinas do stock e cria um 3MF multicolor.",
+    "it": "Dipinge un modello 3MF/STL con i colori delle bobine in stock e crea un 3MF multicolore.",
+    "zh": "用库存耗材的颜色为 3MF/STL 模型上色，并生成多色 3MF。",
+    "ja": "在庫フィラメントの色で 3MF/STL モデルを塗り、マルチカラー 3MF を作成します。"
+  },
+  "host": {
+    "modules": [
+      "paint_stock"
+    ]
+  },
+  "permissions": [
+    "ui",
+    "api:read",
+    "api:write"
+  ],
+  "ui": {
+    "title": "Filament painter",
+    "icon": "fa-paintbrush",
+    "entry": "paint.html"
+  }
+}

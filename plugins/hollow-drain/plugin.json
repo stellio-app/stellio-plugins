@@ -1,0 +1,32 @@
+{
+  "id": "hollow-drain",
+  "name": "Hollow & drain",
+  "version": "1.0.1",
+  "api": 1,
+  "author": "Stellio",
+  "description": {
+    "fr": "Évide un modèle 3MF ou STL à paroi constante et perce des trous de drainage et d'évent sur chaque poche, avec bouchons à imprimer.",
+    "en": "Hollows a 3MF or STL model with a constant wall and drills drain and vent holes into every pocket, with printable plugs.",
+    "de": "Höhlt ein 3MF- oder STL-Modell mit konstanter Wandstärke aus und bohrt Ablauf- und Entlüftungslöcher in jede Tasche, mit druckbaren Stopfen.",
+    "es": "Vacía un modelo 3MF o STL con pared constante y perfora orificios de drenaje y ventilación en cada bolsa, con tapones imprimibles.",
+    "pt": "Esvazia um modelo 3MF ou STL com parede constante e faz furos de drenagem e ventilação em cada bolsa, com tampões imprimíveis.",
+    "it": "Svuota un modello 3MF o STL con parete costante e pratica fori di drenaggio e sfiato in ogni tasca, con tappi stampabili.",
+    "zh": "将 3MF 或 STL 模型按恒定壁厚抽壳，并在每个空腔钻出排液孔和排气孔，可生成可打印堵头。",
+    "ja": "3MF/STL モデルを一定の肉厚で中空にし、各空洞に排出穴と通気穴を開けます。印刷用の栓も作成できます。"
+  },
+  "host": {
+    "modules": [
+      "hollow_drain"
+    ]
+  },
+  "permissions": [
+    "ui",
+    "api:read",
+    "api:write"
+  ],
+  "ui": {
+    "title": "Hollow & drain",
+    "icon": "fa-circle-notch",
+    "entry": "hollow.html"
+  }
+}

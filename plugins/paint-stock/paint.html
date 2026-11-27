@@ -1,0 +1,470 @@
+<style>
+html,body{background:transparent}
+body{margin:0;padding:16px;color:var(--st-text,#eee);font:14px/1.5 system-ui,sans-serif}
+h1{font-size:18px;margin:0 0 4px}
+p.sub{margin:0 0 14px;color:var(--st-muted,#999)}
+.card{background:var(--st-card,#1b1b1b);border:1px solid var(--st-border,#333);border-radius:8px;padding:14px;margin-bottom:12px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:inherit;margin:10px 0 0}label.chk input{width:auto}
+label{display:block;font-size:12px;color:var(--st-muted,#999);margin:8px 0 3px}
+input,select{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:140px}
+button{padding:8px 14px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit;cursor:pointer}
+button.primary{background:var(--st-accent,#4ea1d3);border-color:transparent;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.files{max-height:380px;overflow:auto;margin-top:8px;padding:8px;border:1px solid var(--st-border,#333);border-radius:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.files .f{cursor:pointer;border:1px solid var(--st-border,#333);border-radius:8px;overflow:hidden;background:var(--st-panel,#161616);display:flex;flex-direction:column}
+.files .f.sel{outline:2px solid var(--st-accent,#4ea1d3);background:color-mix(in srgb,var(--st-accent,#4ea1d3) 22%,transparent)}
+.files .th{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.12);font-size:26px;opacity:1}
+.files .th img{width:100%;height:100%;object-fit:contain;display:block}
+.files .nm{padding:5px 7px;font-size:12px;line-height:1.25;word-break:break-all;max-height:3.9em;overflow:hidden}
+.files .none{grid-column:1/-1;padding:6px}
+#dest{display:none;flex:2 1 320px}
+.crumb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:2px 0 6px;font-size:13px}
+.crumb button{padding:2px 8px;font-size:12px}
+.dirs{max-height:170px;overflow:auto;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.dirs div{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--st-border,#333);display:flex;gap:8px;align-items:center}
+.dirs div:last-child{border-bottom:0}.dirs div:hover{background:color-mix(in srgb,var(--st-accent,#4ea1d3) 16%,transparent)}
+.dirs .none{cursor:default;opacity:.7}.dirs .none:hover{background:none}
+.srcrow{display:flex;gap:8px;align-items:center}.srcrow select{flex:1 1 0;width:auto;min-width:0}.srcrow .dsel{margin-top:0;flex:none}
+.dsel{display:flex;gap:8px;align-items:center;margin-top:8px}.dsel button{background:transparent;border-color:transparent;padding:6px 12px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.dsel button:hover{background:color-mix(in srgb,var(--st-text,#eee) 8%,transparent)}.dsel #mkopen{flex:1}.mi{display:inline-flex;color:var(--st-accent,#4ea1d3)}.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:50}.mo .md{background:var(--st-panel,#1e2129);border:1px solid var(--st-border,#2a2f3a);border-radius:16px;padding:28px;max-width:450px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.6)}.mo h3{margin:0 0 14px;font-size:18px;display:flex;gap:12px;align-items:center}.mo h3 .mi svg{width:24px;height:24px}.mo p{margin:0 0 14px;opacity:.75;line-height:1.5}.mo input{padding:12px 16px;border:2px solid var(--st-border,#2a2f3a);border-radius:10px;margin-bottom:20px;background:var(--st-bg,#161a22)}.mo input:focus{outline:none;border-color:var(--st-accent,#4ea1d3);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-accent,#4ea1d3) 35%,transparent)}.mo .bt button:not(.primary){background:var(--st-hover,#2a2f3a)}.mo .bt{display:flex;gap:12px;justify-content:flex-end}.mo .bt button{padding:11px 24px;border-radius:10px;border:none}.mo .bt .primary{font-weight:600}.mk{display:flex;gap:8px;margin-top:8px}.mk input{flex:1}
+.here{margin-top:6px;font-size:12px;opacity:.85}
+.dots{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:dotb 1.2s infinite ease-in-out both}.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}@keyframes dotb{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
+#view{display:none;margin-top:14px}
+#view .hint{font-size:12px;opacity:.7;margin-bottom:8px}
+#view .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+#view .card{border:1px solid var(--st-border,#333);border-radius:8px;background:var(--st-panel,#161616);overflow:hidden}
+#view canvas{width:100%;height:auto;aspect-ratio:1;display:block;cursor:grab;touch-action:none}
+#view .cap{padding:5px 8px;font-size:12px;display:flex;gap:6px;align-items:center;border-top:1px solid var(--st-border,#333)}
+#view .cap i{width:12px;height:12px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#big{display:none;margin-top:10px;gap:12px;align-items:center}
+#big img{width:96px;height:96px;object-fit:contain;border-radius:8px;border:1px solid var(--st-border,#333);background:rgba(127,127,127,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.chip i{width:14px;height:14px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#msg{margin-top:10px;padding:9px 11px;border-radius:6px;border:1px solid var(--st-border,#333);display:none}
+#msg.finished{display:flex!important;align-items:center;gap:14px;padding:16px 18px;border:2px solid var(--st-success,#30a46c);background:color-mix(in srgb,var(--st-success,#30a46c) 14%,transparent);animation:pop .45s ease-out}#msg.finished .tick{flex:none;width:38px;height:38px;border-radius:50%;background:var(--st-success,#30a46c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}#msg.finished b{display:block;font-size:15px}#msg.finished small{opacity:.8}@keyframes pop{0%{transform:scale(.96);opacity:0}60%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+#msg.err{border-color:var(--st-danger,#e5484d)}#msg.ok{border-color:var(--st-success,#30a46c)}
+
+.work{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.wl{flex:1 1 380px;min-width:0;max-width:min(800px,calc((100vh - 250px)*4/3))}.wr{flex:2 1 560px;min-width:240px;max-width:780px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}.wr>div{min-width:0}.c1{display:flex;flex-direction:column;min-height:0}.sec{flex:1 1 0;min-height:130px;margin-top:14px;border:1px solid var(--st-border,#333);border-radius:8px;padding:10px;display:flex;flex-direction:column}.sec h2{flex:none}.sec .slots{flex:1 1 0;min-height:0;overflow-y:auto}@media(max-width:1250px){.wr{grid-template-columns:1fr}.sec{flex:none}.sec .slots{max-height:230px}}
+#stage{position:relative;border:1px solid var(--st-border,#333);border-radius:8px;background:radial-gradient(circle at 50% 40%,rgba(127,127,127,.18),rgba(127,127,127,.05));overflow:hidden;touch-action:none}
+#cvg{display:block;width:100%;height:auto;aspect-ratio:4/3}
+#ring{position:absolute;display:none;border:2px solid #fff;box-shadow:0 0 0 1px #000;border-radius:50%;pointer-events:none}
+h2{font-size:14px;margin:0 0 6px}
+.tools,.btns{display:flex;flex-wrap:wrap;gap:6px}.tools button.on{background:var(--st-accent,#4ea1d3);border-color:transparent;color:#fff}
+.btns{margin-top:8px}
+.slots{display:flex;flex-direction:column;gap:4px}.slot{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--st-border,#333);border-radius:6px;cursor:pointer;background:var(--st-panel,#161616)}
+.slot.on{outline:2px solid var(--st-accent,#4ea1d3)}.slot i,.sp i{width:18px;height:18px;border-radius:4px;border:1px solid rgba(127,127,127,.6);flex:none;display:inline-block}
+.slot span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.slot small{opacity:.7}.slot .x{padding:0 6px;border:0;background:transparent}
+.stock{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:170px;overflow:auto;margin-top:8px}
+.sp{display:flex;align-items:center;gap:8px;text-align:left;padding:5px 8px}.sp span{min-width:0;display:flex;flex-direction:column}.sp b{font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sp small{opacity:.7;font-size:11px}
+.custom{grid-column:1/-1}.custom input{height:34px;padding:2px}
+.seg{display:flex;gap:10px;flex-wrap:wrap}.seg>div{flex:1;min-width:120px}
+#msg0{margin-top:6px;font-size:12px;opacity:.85}
+.oc{margin-top:16px;padding-top:12px;border-top:1px solid var(--st-border,#333)}.oc .btns{margin-top:10px}.oc .row>div{min-width:120px}
+.seg.rg>div{flex:1 1 100%}.seg.rg label{white-space:nowrap}
+</style>
+<h1 id="t_title"></h1>
+<p class="sub" id="t_intro"></p>
+<div class="card">
+  <div id="pick">
+    <label id="t_search"></label>
+    <input id="q" type="search" autocomplete="off">
+    <div class="files" id="files"></div>
+  </div>
+</div>
+<div id="msg0" class="hint"></div>
+<div class="card work" id="work" style="display:none">
+  <div class="wl">
+    <div id="stage"><canvas id="cvg" width="800" height="600"></canvas><div id="ring"></div></div>
+    <div class="hint" id="t_hint" style="margin-top:6px"></div>
+  </div>
+  <div class="wr">
+   <div class="c1">
+    <h2 id="t_tools"></h2>
+    <div class="tools" id="tools"></div>
+    <div class="seg rg" style="margin-top:6px">
+      <div><label><span id="t_rad"></span> : <b id="radv"></b></label><input id="rad" type="range" min="0.5" max="30" step="0.5" value="4"></div>
+      <div><label><span id="t_ang"></span> : <b id="angv"></b></label><input id="ang" type="range" min="5" max="85" step="1" value="30"></div>
+    </div>
+    <div class="btns"><button type="button" id="undo"></button><button type="button" id="redo"></button></div>
+    <div class="sec"><h2 id="t_slots"></h2>
+    <div class="slots" id="slots"></div></div>
+   </div>
+   <div class="c2">
+    <h2 id="t_stock" style="margin-top:0"></h2>
+    <div class="seg"><div><input id="ps" type="search" autocomplete="off"></div><div><select id="pm"></select></div></div>
+    <label class="chk"><input type="checkbox" id="ph" checked><span id="t_hide"></span></label>
+    <div class="stock" id="stock"></div>
+  <div id="outcard" class="oc" style="display:none">
+    <div class="row"><div><label id="t_name"></label><input id="name" maxlength="120"></div>
+      <div><label id="t_bw"></label><input id="bw" type="number" min="20" value="256"></div><div><label id="t_bd"></label><input id="bd" type="number" min="20" value="256"></div></div>
+    <div>
+      <label id="t_src"></label>
+      <div class="srcrow"><select id="src"></select><div class="dsel"><button type="button" id="mkopen"></button><button type="button" id="browse" class="ico"></button></div></div>
+      <div class="hint" id="t_savehint" style="margin-top:6px"></div>
+      <div class="here" id="here"></div>
+    </div>
+    <div class="btns"><button id="run" class="primary" disabled></button><button type="button" id="chg" style="display:none"></button></div>
+    <div id="msg"></div>
+  </div>
+   </div>
+  </div>
+</div>
+<script>
+const T={
+fr:{title:'Peinture filaments',intro:'Peins un modèle 3MF ou STL avec les couleurs des bobines de ton stock, puis crée un 3MF peint (une couleur = un filament) prêt pour Bambu Studio / OrcaSlicer. Le fichier d\'origine n\'est pas modifié.',
+ search:'Rechercher un modèle (3MF / STL) de la bibliothèque',none:'Aucun modèle trouvé.',change:'Changer de modèle',pick:'Choisissez d\'abord un modèle.',busy:'Traitement…',loading:'Chargement du modèle…',
+ tools:'Outils',brush:'Pinceau',bucket:'Pot de peinture',fillall:'Tout remplir',erase:'Gomme',rotate:'Tourner',rad:'Rayon du pinceau (mm)',ang:'Angle max du pot (°)',undo:'Annuler',redo:'Rétablir',
+ slots:'Filaments utilisés',stock:'Mon stock de filament',searchph:'Rechercher une bobine…',allmat:'Toutes les matières',hide:'Masquer les bobines vides',nostock:'Aucune bobine dans le stock (page Matières). Choisis une couleur libre ci-dessous.',
+ custom:'Couleur libre',base:'base',remove:'Retirer',chbase:'Changer la couleur de base',pickbase:'Choisis la nouvelle couleur de base dans ton stock.',
+ hint:'Clic gauche : peindre · clic droit ou outil « Tourner » : faire pivoter · clic molette (ou Maj + glisser) : déplacer · molette : zoom vers le curseur · double-clic en mode « Tourner » : recentrer. Choisis d\'abord la couleur de base (filament 1), elle recouvre tout le modèle.',
+ first:'Choisis d\'abord une couleur dans ton stock : elle sera la couleur de base.',maxslots:'16 filaments au maximum.',
+ name:'Nom du nouveau fichier',bw:'Plateau : largeur (mm)',bd:'Plateau : profondeur (mm)',src:'Enregistrer dans (source)',savehint:'Choisis où enregistrer le 3MF peint.',run:'Créer le 3MF peint',
+ fin:'Terminé',done:'{c} couleur(s) — {f}',outside:'Ce dossier n\'est dans aucune de tes sources : ajoute-le d\'abord comme source, ou choisis un dossier de la liste.',
+ mkenter:'Entrez le nom du nouveau dossier',mkph:'Nom du dossier',cancel:'Annuler',create:'Créer',browse:'Parcourir',selfold:'Veuillez sélectionner un dossier.',mkopen:'Créer un dossier...',here:'Enregistrement dans : ',same:'Dossier du fichier d\'origine',
+ info:'{x} × {y} × {z} mm · {n} faces',reduced:' (édition sur un maillage allégé, export sur le modèle complet)',refined:' (maillage affiné pour peindre précisément : {m} faces)',g:'g'},
+en:{title:'Filament painter',intro:'Paint a 3MF or STL model with the colors of the spools in your stock, then create a painted 3MF (one color = one filament) ready for Bambu Studio / OrcaSlicer. The original file is never modified.',
+ search:'Search a model (3MF / STL) in the library',none:'No model found.',change:'Change model',pick:'Pick a model first.',busy:'Working…',loading:'Loading the model…',
+ tools:'Tools',brush:'Brush',bucket:'Paint bucket',fillall:'Fill all',erase:'Eraser',rotate:'Rotate',rad:'Brush radius (mm)',ang:'Bucket max angle (°)',undo:'Undo',redo:'Redo',
+ slots:'Filaments used',stock:'My filament stock',searchph:'Search a spool…',allmat:'All materials',hide:'Hide empty spools',nostock:'No spool in the stock (Materials page). Pick a free color below.',
+ custom:'Free color',base:'base',remove:'Remove',chbase:'Change the base color',pickbase:'Pick the new base color from your stock.',
+ hint:'Left click: paint · right click or the “Rotate” tool: rotate · middle click (or Shift + drag): pan · wheel: zoom to cursor · double-click in “Rotate” mode: reset the view. First pick the base color (filament 1): it covers the whole model.',
+ first:'First pick a color from your stock: it will be the base color.',maxslots:'16 filaments maximum.',
+ name:'New file name',bw:'Bed width (mm)',bd:'Bed depth (mm)',src:'Save to (source)',savehint:'Choose where to save the painted 3MF.',run:'Create the painted 3MF',
+ fin:'Done',done:'{c} color(s) — {f}',outside:'This folder is not in any of your sources: add it as a source first, or pick a folder from the list.',
+ mkenter:'Enter the new folder name',mkph:'Folder name',cancel:'Cancel',create:'Create',browse:'Browse',selfold:'Please select a folder.',mkopen:'Create a folder...',here:'Saving to: ',same:'Folder of the original file',
+ info:'{x} × {y} × {z} mm · {n} faces',reduced:' (editing on a lighter mesh, export on the full model)',refined:' (mesh refined for precise painting: {m} faces)',g:'g'}
+};
+let L='fr',sel=null,sources=[],M=null,stock=[],slots=[],active=0,tool='brush';
+const $=id=>document.getElementById(id),t=k=>(T[L]||T.en)[k]||T.en[k]||k;
+function esc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const TOOLS=['brush','bucket','fillall','erase','rotate'];
+function labels(){
+  const m={t_title:'title',t_intro:'intro',t_search:'search',t_tools:'tools',t_rad:'rad',t_ang:'ang',t_slots:'slots',t_stock:'stock',t_hide:'hide',t_hint:'hint',t_name:'name',t_bw:'bw',t_bd:'bd',t_src:'src'};
+  for(const k in m)$(k).textContent=t(m[k]);
+  $('undo').textContent=t('undo');$('redo').textContent=t('redo');$('run').textContent=t('run');$('ps').placeholder=t('searchph');
+  $('tools').innerHTML=TOOLS.map(k=>`<button type="button" data-tool="${k}" class="${k===tool?'on':''}">${esc(t(k))}</button>`).join('');
+  $('tools').querySelectorAll('button').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;labels()});
+  $('radv').textContent=$('rad').value;$('angv').textContent=$('ang').value;
+  $('mkopen').innerHTML='<span class="mi">'+ICO_PLUS+'</span> ';$('mkopen').appendChild(document.createTextNode(t('mkopen')));$('browse').innerHTML=ICO_OPEN;$('browse').title=t('browse');$('t_savehint').textContent=t('savehint');
+  renderStock();renderSlots();
+}
+function msg(txt,cls){const m=$('msg');m.textContent=cls==='busy'?String(txt).replace(/[….]+$/,''):txt;m.className=cls||'';if(cls==='busy'){const d=document.createElement('span');d.className='dots';d.innerHTML='<i></i><i></i><i></i>';m.appendChild(d)}m.style.display=txt?'block':'none'}
+function finished(d){const m=$('msg');m.className='finished';m.innerHTML='';
+  const k=document.createElement('div');k.className='tick';k.textContent='✓';const w=document.createElement('div');
+  const b=document.createElement('b');b.textContent=t('fin')+' — '+t('done').replace('{c}',d.colors).replace('{f}',d.output_filename);w.appendChild(b);
+  const sm=document.createElement('small');sm.style.display='block';sm.textContent=d.share.map((p,i)=>slots[i]?slots[i].name+' '+p+'%':'').filter(Boolean).join(' · ');w.appendChild(sm);
+  m.appendChild(k);m.appendChild(w);m.style.display='flex';try{m.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}}
+const thumbs=new Map();
+function mime(b){const u=new Uint8Array(b);if(u[0]===0x89&&u[1]===0x50)return'image/png';if(u[0]===0xff&&u[1]===0xd8)return'image/jpeg';return'image/webp'}
+let thN=0;const thQ=[];   // au plus 3 miniatures demandées en même temps : l'application reste fluide
+function thNext(){while(thN<3&&thQ.length){const j=thQ.shift();thN++;j().finally(()=>{thN--;thNext()})}}
+function thumbUrl(path){
+  if(!thumbs.has(path))thumbs.set(path,new Promise(ok=>{thQ.push(()=>window.stellio.api('/api/thumb?path='+encodeURIComponent(path),'arraybuffer')
+    .then(b=>ok(URL.createObjectURL(new Blob([b],{type:mime(b)})))).catch(()=>ok(null)));thNext()}));
+  return thumbs.get(path);
+}
+function fill(el,path){thumbUrl(path).then(u=>{if(u){el.innerHTML='';const i=new Image();i.alt='';i.src=u;el.appendChild(i)}})}
+let io=null;
+function lazy(el,path){
+  if(!('IntersectionObserver' in window))return fill(el,path);
+  if(!io)io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);fill(e.target,e.target.dataset.p)}}),{root:$('files'),rootMargin:'120px'});
+  el.dataset.p=path;io.observe(el);
+}
+async function search(){
+  try{const d=await window.stellio.api('/api/x/paint-stock/files?q='+encodeURIComponent($('q').value.trim()));
+    const box=$('files');if(io)io.disconnect();
+    box.innerHTML=(d.files||[]).map((f,i)=>`<div class="f${sel&&sel.path===f.path?' sel':''}" data-i="${i}" title="${esc(f.path)}"><div class="th"><i>&#9638;</i></div><div class="nm">${esc(f.name)}</div></div>`).join('')||`<div class="none">${esc(t('none'))}</div>`;
+    box.querySelectorAll('.f').forEach(el=>{const f=d.files[+el.dataset.i];lazy(el.querySelector('.th'),f.path);
+      el.onclick=()=>{box.querySelectorAll('.f').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');choose(f)}});
+  }catch(e){msg(e.message,'err')}
+}
+function collapse(on){const c=$('pick').closest('.card');c.style.display=on?'none':'';if(!on){try{c.scrollIntoView({block:'nearest'})}catch(e){}}}
+$('chg').onclick=()=>collapse(false);
+function showBig(){const b=$('chg');b.style.display=sel?'':'none';b.textContent=t('change')}
+
+/* ── stock de filament ── */
+async function loadStock(){
+  try{const d=await window.stellio.api('/api/filament/spools'),map=new Map();
+    (d.slots||[]).forEach(s=>{let hx=String(s.color_hex||'').trim();if(/^[0-9a-f]{6}$/i.test(hx))hx='#'+hx;if(!/^#[0-9a-f]{6}$/i.test(hx))return;hx=hx.toUpperCase();
+      const key=[s.name,s.material,hx].join('|'),rem=(s.remaining_g==null?null:+s.remaining_g);
+      if(map.has(key)){const o=map.get(key);o.rem=(o.rem==null||rem==null)?null:o.rem+rem;o.count++}else map.set(key,{hex:hx,name:s.name||hx,type:s.material||'PLA',rem,count:1})});
+    stock=[...map.values()]}catch(e){stock=[]}
+  const mats=[...new Set(stock.map(s=>s.type).filter(Boolean))].sort();
+  $('pm').innerHTML=`<option value="">${esc(t('allmat'))}</option>`+mats.map(x=>`<option>${esc(x)}</option>`).join('');renderStock()}
+function renderStock(){
+  const q=$('ps').value.trim().toLowerCase(),mat=$('pm').value,hide=$('ph').checked,box=$('stock');
+  const list=stock.filter(s=>(!mat||s.type===mat)&&(!q||(s.name+' '+s.type).toLowerCase().includes(q))&&!(hide&&s.rem!=null&&s.rem<=0));
+  box.innerHTML=(list.map((s,i)=>`<button type="button" class="sp" data-i="${i}" title="${esc(s.name)} · ${esc(s.type)}"><i style="background:${esc(s.hex)}"></i><span><b>${esc(s.name)}</b><small>${esc(s.type)}${s.rem!=null?' · '+Math.round(s.rem)+' '+esc(t('g')):''}</small></span></button>`).join(''))||(stock.length?'':`<div class="hint">${esc(t('nostock'))}</div>`);
+  box.querySelectorAll('.sp').forEach(b=>b.onclick=()=>useColor(list[+b.dataset.i]));
+  if(!stock.length){const c=document.createElement('div');c.className='custom';c.innerHTML=`<label>${esc(t('custom'))}</label><input type="color" value="#ff6a00">`;c.querySelector('input').onchange=e=>useColor({hex:e.target.value.toUpperCase(),name:e.target.value.toUpperCase(),type:'PLA'});box.appendChild(c)}}
+$('ps').oninput=renderStock;$('pm').onchange=renderStock;$('ph').onchange=renderStock;
+let baseEdit=false;
+function useColor(s){
+  if(baseEdit&&slots.length){baseEdit=false;slots[0]={hex:s.hex,name:s.name,type:s.type,rgb:hexRGB(s.hex)};active=1;$('msg0').textContent='';recolorAll();renderSlots();return}
+  let k=slots.findIndex(x=>x.hex===s.hex&&x.name===s.name);
+  if(k<0){if(slots.length>=16){$('msg0').textContent=t('maxslots');return}slots.push({hex:s.hex,name:s.name,type:s.type,rgb:hexRGB(s.hex)});k=slots.length-1;if(slots.length===1)recolorAll()}
+  active=k+1;$('msg0').textContent='';renderSlots();$('run').disabled=!M}
+function renderSlots(){
+  const box=$('slots');if(!slots.length){box.innerHTML=`<div class="hint">${esc(t('first'))}</div>`;return}
+  const sh=shares();
+  box.innerHTML=slots.map((s,i)=>`<div class="slot${active===i+1?' on':''}" data-k="${i+1}"><i style="background:${esc(s.hex)}"></i><span>${i+1}${i===0?' ('+esc(t('base'))+')':''} · ${esc(s.name)}</span><small>${sh[i]!=null?sh[i].toFixed(1)+'%':''}</small>${i>0&&!(sh[i]>0)?`<button type="button" class="x" title="${esc(t('remove'))}">✕</button>`:''}${i===0?`<button type="button" class="x" data-act="base" title="${esc(t('chbase'))}">✎</button>`:''}</div>`).join('');
+  box.querySelectorAll('.slot').forEach(el=>{const k=+el.dataset.k;el.onclick=e=>{if(e.target.dataset.act==='base'){baseEdit=!baseEdit;$('msg0').textContent=baseEdit?t('pickbase'):'';return}if(e.target.classList.contains('x')){removeSlot(k);return}active=k;renderSlots()};})}
+
+/* ── modèle : maillage d'édition, états par sommet (0 = couleur de base, n = filament n) ── */
+function b64buf(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}
+function hexRGB(h){const n=parseInt(h.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255]}
+function buildModel(d){return mkModel(new Float32Array(b64buf(d.pos)),new Uint32Array(b64buf(d.tris)),null,d)}
+function mkModel(P,Tr,st0,d){
+  const nv=P.length/3,nt=Tr.length/3;
+  const soup=new Float32Array(nt*9),nrm=new Float32Array(nt*3),ar=new Float32Array(nt),cen=new Float32Array(nt*3);
+  for(let tI=0;tI<nt;tI++){for(let j=0;j<3;j++){const v=Tr[tI*3+j]*3;soup[tI*9+j*3]=P[v];soup[tI*9+j*3+1]=P[v+1];soup[tI*9+j*3+2]=P[v+2]}
+    const o=tI*9,ux=soup[o+3]-soup[o],uy=soup[o+4]-soup[o+1],uz=soup[o+5]-soup[o+2],vx=soup[o+6]-soup[o],vy=soup[o+7]-soup[o+1],vz=soup[o+8]-soup[o+2];
+    const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,l=Math.hypot(nx,ny,nz)||1;nrm[tI*3]=nx/l;nrm[tI*3+1]=ny/l;nrm[tI*3+2]=nz/l;ar[tI]=l/2;
+    cen[tI*3]=(soup[o]+soup[o+3]+soup[o+6])/3;cen[tI*3+1]=(soup[o+1]+soup[o+4]+soup[o+7])/3;cen[tI*3+2]=(soup[o+2]+soup[o+5]+soup[o+8])/3}
+  const ext=d.size,half=[ext[0]/2+1e-3,ext[1]/2+1e-3,ext[2]/2+1e-3],cell=Math.max(2,Math.max(ext[0],ext[1],ext[2])/40),g=[Math.ceil(2*half[0]/cell)+1,Math.ceil(2*half[1]/cell)+1,Math.ceil(2*half[2]/cell)+1];
+  const cid=i=>{const x=Math.min(g[0]-1,Math.max(0,Math.floor((cen[i*3]+half[0])/cell))),y=Math.min(g[1]-1,Math.max(0,Math.floor((cen[i*3+1]+half[1])/cell))),z=Math.min(g[2]-1,Math.max(0,Math.floor((cen[i*3+2]+half[2])/cell)));return x+g[0]*(y+g[1]*z)};
+  const co=new Uint32Array(g[0]*g[1]*g[2]+1);for(let i=0;i<nt;i++)co[cid(i)+1]++;for(let i=0;i<co.length-1;i++)co[i+1]+=co[i];
+  const cl=new Uint32Array(nt),cf=co.slice(0,co.length-1);for(let i=0;i<nt;i++)cl[cf[cid(i)]++]=i;
+  const m={d,P,Tr,nv,nt,soup,nrm,ar,cen,cell,half,g,co,cl,st:st0||new Uint8Array(nt),col:new Uint8Array(nt*9),adj:null,undo:[],redo:[],refined:false,R:Math.hypot(ext[0],ext[1],ext[2])/2||1,gl:null,dirty:true};
+  for(let tI=0;tI<nt;tI++){const c=triColor(m.st[tI]);for(let j=0;j<3;j++){m.col[tI*9+j*3]=c[0];m.col[tI*9+j*3+1]=c[1];m.col[tI*9+j*3+2]=c[2]}}
+  return m}
+function baseRGB(){return slots.length?slots[0].rgb:[150,160,175]}
+function triColor(s){return s>0&&slots[s-1]?slots[s-1].rgb:baseRGB()}
+function triState(tI){return M.st[tI]}
+function setTriCol(tI){const c=triColor(M.st[tI]);for(let j=0;j<3;j++){M.col[tI*9+j*3]=c[0];M.col[tI*9+j*3+1]=c[1];M.col[tI*9+j*3+2]=c[2]}}
+function recolorAll(){if(!M)return;for(let tI=0;tI<M.nt;tI++)setTriCol(tI);M.dirty=true;draw()}
+function shares(){if(!M)return slots.map(()=>null);const s=new Float64Array(slots.length+1);let tot=0;for(let tI=0;tI<M.nt;tI++){const k=M.st[tI]||1;if(k<s.length)s[k]+=M.ar[tI];tot+=M.ar[tI]}return slots.map((_,i)=>100*s[i+1]/(tot||1))}
+function snap(){return{st:M.st.slice(),P:M.P,Tr:M.Tr}}
+function pushUndo(){M.undo.push(snap());if(M.undo.length>25)M.undo.shift();M.redo.length=0}
+function restore(from,to){if(!from.length)return;to.push(snap());const o=from.pop();
+  if(o.Tr!==M.Tr){const n=mkModel(o.P,o.Tr,o.st,M.d);n.undo=M.undo;n.redo=M.redo;n.refined=o.Tr!==M.d._Tr0;n.maxEdge=maxEdge(n);M=n}else M.st.set(o.st);recolorAll();renderSlots()}
+$('undo').onclick=()=>M&&restore(M.undo,M.redo);$('redo').onclick=()=>M&&restore(M.redo,M.undo);
+function setTris(list,state){let n=0;for(const t of list){if(M.st[t]===state)continue;M.st[t]=state;setTriCol(t);n++}if(n){M.dirty=true;draw()}}
+function curState(){return tool==='erase'?0:active}
+/* pinceau : le contour suit le cercle du pinceau. Les arêtes qui coupent le cercle sont coupées en deux jusqu'à une longueur minimale (subdivision conforme, comme à l'export),
+   puis les faces dont le centre est dans la sphère, tournées vers l'observateur et proches de l'orientation de la face visée, sont peintes (les côtés ne le sont pas). */
+const COS_SURF=0.5,MAX_TRIS=600000;
+function triGeo(P,Tr,t){const a=Tr[t*3]*3,b=Tr[t*3+1]*3,c=Tr[t*3+2]*3,ux=P[b]-P[a],uy=P[b+1]-P[a+1],uz=P[b+2]-P[a+2],vx=P[c]-P[a],vy=P[c+1]-P[a+1],vz=P[c+2]-P[a+2];
+  const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,l=Math.hypot(nx,ny,nz)||1;return[nx/l,ny/l,nz/l]}
+function segD2(p,P,u,w){const ax=P[u],ay=P[u+1],az=P[u+2],bx=P[w]-ax,by=P[w+1]-ay,bz=P[w+2]-az,l2=bx*bx+by*by+bz*bz||1e-12;
+  let k=((p[0]-ax)*bx+(p[1]-ay)*by+(p[2]-az)*bz)/l2;k=k<0?0:k>1?1:k;const dx=ax+bx*k-p[0],dy=ay+by*k-p[1],dz=az+bz*k-p[2];return dx*dx+dy*dy+dz*dz}
+/* une passe : coupe en deux les arêtes `marks` (clé lo*nv+hi). Renvoie {P,Tr,st,cand} ; les faces filles héritent de l'état et du drapeau « candidate » */
+function refinePass(P0,Tr0,st0,cand0,marks){
+  const nv=P0.length/3,nt=Tr0.length/3,keys=[...marks.keys()].sort((a,b)=>a-b),idx=new Map(),P=new Float32Array((nv+keys.length)*3);P.set(P0);
+  keys.forEach((k,i)=>{const lo=Math.floor(k/nv),hi=k-lo*nv,o=(nv+i)*3;idx.set(k,nv+i);for(let c=0;c<3;c++)P[o+c]=(P0[lo*3+c]+P0[hi*3+c])/2});
+  const T=[],S=[],C=[],mid=(a,b)=>{const v=idx.get(a<b?a*nv+b:b*nv+a);return v===undefined?-1:v};
+  const add=(a,b,c,t)=>{T.push(a,b,c);S.push(st0[t]);C.push(cand0[t])};
+  for(let t=0;t<nt;t++){const a=Tr0[t*3],b=Tr0[t*3+1],c=Tr0[t*3+2],m0=mid(a,b),m1=mid(b,c),m2=mid(c,a),n=(m0>=0)+(m1>=0)+(m2>=0);
+    if(!n){add(a,b,c,t);continue}
+    if(n===3){add(a,m0,m2,t);add(m0,b,m1,t);add(m2,m1,c,t);add(m0,m1,m2,t)}
+    else if(n===1){if(m0>=0){add(a,m0,c,t);add(m0,b,c,t)}else if(m1>=0){add(b,m1,a,t);add(m1,c,a,t)}else{add(c,m2,b,t);add(m2,a,b,t)}}
+    else{if(m0<0){add(m1,c,m2,t);add(b,m1,m2,t);add(b,m2,a,t)}else if(m1<0){add(m2,a,m0,t);add(c,m2,m0,t);add(c,m0,b,t)}else{add(m0,b,m1,t);add(a,m0,m1,t);add(a,m1,c,t)}}}
+  return{P,Tr:Uint32Array.from(T),st:Uint8Array.from(S),cand:Uint8Array.from(C)}}
+/* stamps = [{p}], h = visée (tri, d). Subdivise localement le maillage autour des positions du pinceau. */
+function refineAround(stamps,h,r){
+  if(M.d.grid||M.nt>MAX_TRIS||tool==='bucket')return;
+  const Lmin=Math.max(0.1,r/24),n0=[M.nrm[h.tri*3],M.nrm[h.tri*3+1],M.nrm[h.tri*3+2]],d=h.d,rr=r*r,hh=M.half,c=M.cell,g=M.g;
+  let P=M.P,Tr=M.Tr,st=M.st,nt=M.nt,cand=new Uint8Array(nt),any=false;
+  const rad=r+(M.maxEdge||0);
+  for(const sp of stamps){const p=sp.p;
+    const x0=Math.max(0,Math.floor((p[0]-rad+hh[0])/c)),x1=Math.min(g[0]-1,Math.floor((p[0]+rad+hh[0])/c)),y0=Math.max(0,Math.floor((p[1]-rad+hh[1])/c)),y1=Math.min(g[1]-1,Math.floor((p[1]+rad+hh[1])/c)),z0=Math.max(0,Math.floor((p[2]-rad+hh[2])/c)),z1=Math.min(g[2]-1,Math.floor((p[2]+rad+hh[2])/c));
+    for(let z=z0;z<=z1;z++)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const ci=x+g[0]*(y+g[1]*z);for(let k=M.co[ci];k<M.co[ci+1];k++){const t=M.cl[k];
+      const nx=M.nrm[t*3],ny=M.nrm[t*3+1],nz=M.nrm[t*3+2];if(nx*d[0]+ny*d[1]+nz*d[2]>=0||nx*n0[0]+ny*n0[1]+nz*n0[2]<COS_SURF)continue;cand[t]=1;any=true}}}
+  if(!any)return;
+  let changed=false;
+  for(let pass=0;pass<8&&nt<MAX_TRIS;pass++){
+    const nv=P.length/3,marks=new Map();
+    for(let t=0;t<nt;t++){if(!cand[t])continue;
+      for(let j=0;j<3;j++){const u=Tr[t*3+j],w=Tr[t*3+(j+1)%3],uo=u*3,wo=w*3,ex=P[uo]-P[wo],ey=P[uo+1]-P[wo+1],ez=P[uo+2]-P[wo+2];
+        if(ex*ex+ey*ey+ez*ez<=Lmin*Lmin)continue;const key=u<w?u*nv+w:w*nv+u;if(marks.has(key))continue;
+        for(const sp of stamps){const p=sp.p;let dx=P[uo]-p[0],dy=P[uo+1]-p[1],dz=P[uo+2]-p[2];const iu=dx*dx+dy*dy+dz*dz<rr;
+          dx=P[wo]-p[0];dy=P[wo+1]-p[1];dz=P[wo+2]-p[2];const iw=dx*dx+dy*dy+dz*dz<rr;
+          if(iu!==iw||(!iu&&!iw&&segD2(p,P,uo,wo)<rr)){marks.set(key,1);break}}}}
+    if(!marks.size)break;
+    if(nt+marks.size*2>MAX_TRIS)break;
+    const o=refinePass(P,Tr,st,cand,marks);P=o.P;Tr=o.Tr;st=o.st;cand=o.cand;nt=Tr.length/3;changed=true}
+  if(!changed)return;
+  const n=mkModel(P,Tr,st,M.d);n.undo=M.undo;n.redo=M.redo;n.refined=true;M=n;M.maxEdge=maxEdge(M)}
+function maxEdge(m){let mx=0;for(let t=0;t<m.nt;t++)for(let j=0;j<3;j++){const a=m.Tr[t*3+j]*3,b=m.Tr[t*3+(j+1)%3]*3,l=Math.hypot(m.P[a]-m.P[b],m.P[a+1]-m.P[b+1],m.P[a+2]-m.P[b+2]);if(l>mx)mx=l}return mx}
+function brushAt(h,from){const r=+$('rad').value,M0=M,tI=h.tri,n0=[M.nrm[tI*3],M.nrm[tI*3+1],M.nrm[tI*3+2]];
+  const pts=[h.p];
+  if(from&&from.tri!==undefined){const dx=h.p[0]-from.p[0],dy=h.p[1]-from.p[1],dz=h.p[2]-from.p[2],dl=Math.hypot(dx,dy,dz),step=Math.max(0.15,r/4);
+    if(dl>step&&dl<r*6&&from.n[0]*M.nrm[h.tri*3]+from.n[1]*M.nrm[h.tri*3+1]+from.n[2]*M.nrm[h.tri*3+2]>0.7){const k=Math.floor(dl/step);for(let i=k;i>=1;i--){const f=1-i/(k+1);pts.unshift([from.p[0]+dx*f,from.p[1]+dy*f,from.p[2]+dz*f])}}}
+  refineAround(pts.map(p=>({p})),h,r);
+  const s=curState(),out=[],m=M,hh=m.half,c=m.cell,g=m.g,d=h.d,r2=r*r,seen=new Set();
+  for(const p of pts){
+    const x0=Math.max(0,Math.floor((p[0]-r+hh[0])/c)),x1=Math.min(g[0]-1,Math.floor((p[0]+r+hh[0])/c)),y0=Math.max(0,Math.floor((p[1]-r+hh[1])/c)),y1=Math.min(g[1]-1,Math.floor((p[1]+r+hh[1])/c)),z0=Math.max(0,Math.floor((p[2]-r+hh[2])/c)),z1=Math.min(g[2]-1,Math.floor((p[2]+r+hh[2])/c));
+    for(let z=z0;z<=z1;z++)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const ci=x+g[0]*(y+g[1]*z);for(let k=m.co[ci];k<m.co[ci+1];k++){const t=m.cl[k];if(seen.has(t))continue;
+      const dx=m.cen[t*3]-p[0],dy=m.cen[t*3+1]-p[1],dz=m.cen[t*3+2]-p[2];if(dx*dx+dy*dy+dz*dz>r2)continue;
+      const nx=m.nrm[t*3],ny=m.nrm[t*3+1],nz=m.nrm[t*3+2];if(nx*d[0]+ny*d[1]+nz*d[2]>=0)continue;            // dos tourné
+      if(nx*n0[0]+ny*n0[1]+nz*n0[2]<COS_SURF)continue;seen.add(t);out.push(t)}}}
+  if(m===M0&&!seen.has(tI))out.push(tI);                   // maillage non affiné : la face visée est toujours peinte
+  setTris(out,s);return{p:h.p,tri:h.tri,n:n0}}
+function buildAdj(){if(M.adj)return;const e=new Map(),adj=new Int32Array(M.nt*3).fill(-1),nv=M.nv;
+  for(let tI=0;tI<M.nt;tI++)for(let j=0;j<3;j++){const a=M.Tr[tI*3+j],b=M.Tr[tI*3+(j+1)%3],k=a<b?a*nv+b:b*nv+a,o=e.get(k);if(o===undefined)e.set(k,tI*3+j);else{adj[tI*3+j]=(o/3)|0;adj[o]=tI}}
+  M.adj=adj}
+function bucketAt(tI){buildAdj();const s=curState(),target=M.st[tI],cosT=Math.cos(+$('ang').value*Math.PI/180),seen=new Uint8Array(M.nt),q=[tI],out=[];seen[tI]=1;
+  while(q.length){const a=q.pop();out.push(a);
+    for(let j=0;j<3;j++){const b=M.adj[a*3+j];if(b<0||seen[b])continue;seen[b]=1;if(M.st[b]!==target)continue;
+      if(M.nrm[a*3]*M.nrm[b*3]+M.nrm[a*3+1]*M.nrm[b*3+1]+M.nrm[a*3+2]*M.nrm[b*3+2]>=cosT)q.push(b)}}
+  setTris(out,s)}
+function fillAll(){const s=curState();M.st.fill(s);recolorAll()}
+function removeSlot(k){if(M){for(let i=0;i<M.st.length;i++){const v=M.st[i];if(v===k)M.st[i]=0;else if(v>k)M.st[i]=v-1}recolorAll()}
+  slots.splice(k-1,1);if(active>=k)active=Math.max(1,active-1);if(!slots.length)active=0;renderSlots()}
+
+/* ── vue 3D (WebGL) ── */
+const VW={yaw:-0.6,el:0.62,zoom:1,px:0,py:0};
+const VS=`attribute vec3 aPos;attribute vec3 aNrm;attribute vec3 aCol;uniform vec4 uT;uniform vec2 uSc;uniform vec2 uP;uniform float uInvR;varying vec3 vCol;varying float vK;
+void main(){float x1=aPos.x*uT.x-aPos.y*uT.y;float y1=aPos.x*uT.y+aPos.y*uT.x;
+gl_Position=vec4((x1+uP.x)*uSc.x,(aPos.z*uT.z+y1*uT.w+uP.y)*uSc.y,(y1*uT.z-aPos.z*uT.w)*uInvR*0.9,1.0);
+float nx=aNrm.x*uT.x-aNrm.y*uT.y;float ny=aNrm.x*uT.y+aNrm.y*uT.x;float vy=aNrm.z*uT.z+ny*uT.w;float vz=ny*uT.z-aNrm.z*uT.w;
+vK=0.38+0.62*abs(-0.3*nx+0.45*vy+0.55*vz);vCol=aCol;}`;
+const FS='precision mediump float;varying vec3 vCol;varying float vK;void main(){gl_FragColor=vec4(vCol*vK,1.0);}';
+let GL=null,raf=0;
+function glInit(){if(GL!==null)return!!GL;
+  try{const cv=$('cvg'),gl=cv.getContext('webgl',{antialias:true,alpha:true});if(!gl)throw 0;
+    const sh=(ty,s)=>{const o=gl.createShader(ty);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+    const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));['aPos','aNrm','aCol'].forEach((n,i)=>gl.bindAttribLocation(p,i,n));gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('link');
+    GL={gl,cv,p,u:{uT:gl.getUniformLocation(p,'uT'),uSc:gl.getUniformLocation(p,'uSc'),uP:gl.getUniformLocation(p,'uP'),uInvR:gl.getUniformLocation(p,'uInvR')},b:[gl.createBuffer(),gl.createBuffer(),gl.createBuffer()]};
+    if(window.ResizeObserver)new ResizeObserver(()=>draw()).observe($('stage'));return true}catch(e){GL=false;$('t_hint').textContent='WebGL indisponible : la peinture 3D ne peut pas s\'afficher.';return false}}
+function draw(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})}
+function pxPerMm(){const cv=GL.cv;return Math.min(cv.width,cv.height)/2/M.R*1.15*VW.zoom}
+function render(){
+  if(!M||!glInit())return;const{gl,cv}=GL,dpr=window.devicePixelRatio||1,cw=Math.max(200,Math.round($('stage').clientWidth*dpr)),ch=Math.round(cw*3/4);
+  if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch}
+  if(!M.gl){const up=(i,a)=>{gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[i]);gl.bufferData(gl.ARRAY_BUFFER,a,gl.STATIC_DRAW)},nr=new Float32Array(M.nt*9);
+    for(let tI=0;tI<M.nt;tI++)for(let j=0;j<3;j++){nr[tI*9+j*3]=M.nrm[tI*3];nr[tI*9+j*3+1]=M.nrm[tI*3+1];nr[tI*9+j*3+2]=M.nrm[tI*3+2]}
+    up(0,M.soup);up(1,nr);M.gl=true;M.dirty=true}
+  if(M.dirty){gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[2]);gl.bufferData(gl.ARRAY_BUFFER,M.col,gl.DYNAMIC_DRAW);M.dirty=false}
+  const sc=pxPerMm();gl.viewport(0,0,cw,ch);gl.clearColor(0,0,0,0);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(GL.p);gl.uniform4f(GL.u.uT,Math.cos(VW.yaw),Math.sin(VW.yaw),Math.cos(VW.el),Math.sin(VW.el));gl.uniform2f(GL.u.uSc,sc/(cw/2),sc/(ch/2));gl.uniform2f(GL.u.uP,VW.px,VW.py);gl.uniform1f(GL.u.uInvR,1/M.R);
+  [[0,3,gl.FLOAT,false],[1,3,gl.FLOAT,false],[2,3,gl.UNSIGNED_BYTE,true]].forEach(([i,n,ty,nm])=>{gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[i]);gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,n,ty,nm,0,0)});
+  gl.drawArrays(gl.TRIANGLES,0,M.nt*3)}
+/* sélection : rayon orthographique (inverse de la projection du shader) contre tous les triangles */
+function pick(ev){
+  const cv=GL.cv,r=cv.getBoundingClientRect(),cx=(ev.clientX-r.left)*cv.width/r.width,cy=(ev.clientY-r.top)*cv.height/r.height,sc=pxPerMm();
+  const X=(cx-cv.width/2)/sc-VW.px,Y=(cv.height/2-cy)/sc-VW.py,cyw=Math.cos(VW.yaw),syw=Math.sin(VW.yaw),ce=Math.cos(VW.el),se=Math.sin(VW.el);
+  const z0=Y*ce,y1=Y*se,ox=X*cyw+y1*syw,oy=-X*syw+y1*cyw,oz=z0,dx=syw*ce,dy=cyw*ce,dz=-se,S=M.soup;
+  let bt=1e30,bi=-1;
+  for(let tI=0;tI<M.nt;tI++){const o=tI*9,e1x=S[o+3]-S[o],e1y=S[o+4]-S[o+1],e1z=S[o+5]-S[o+2],e2x=S[o+6]-S[o],e2y=S[o+7]-S[o+1],e2z=S[o+8]-S[o+2];
+    const px=dy*e2z-dz*e2y,py=dz*e2x-dx*e2z,pz=dx*e2y-dy*e2x,det=e1x*px+e1y*py+e1z*pz;if(det>-1e-12&&det<1e-12)continue;
+    const inv=1/det,tx=ox-S[o],ty=oy-S[o+1],tz=oz-S[o+2],u=(tx*px+ty*py+tz*pz)*inv;if(u<0||u>1)continue;
+    const qx=ty*e1z-tz*e1y,qy=tz*e1x-tx*e1z,qz=tx*e1y-ty*e1x,v=(dx*qx+dy*qy+dz*qz)*inv;if(v<0||u+v>1)continue;
+    const tt=(e2x*qx+e2y*qy+e2z*qz)*inv;if(tt<bt){bt=tt;bi=tI}}
+  return bi<0?null:{tri:bi,p:[ox+dx*bt,oy+dy*bt,oz+dz*bt],d:[dx,dy,dz]}}
+function ring(ev,on){const rg=$('ring');if(!on||!M||!GL||tool==='rotate'||tool==='bucket'||tool==='fillall'){rg.style.display='none';return}
+  const r=GL.cv.getBoundingClientRect(),st=$('stage').getBoundingClientRect(),d=2*(+$('rad').value)*pxPerMm()*r.width/GL.cv.width;
+  rg.style.cssText=`display:block;width:${d}px;height:${d}px;left:${ev.clientX-st.left-d/2}px;top:${ev.clientY-st.top-d/2}px`}
+(()=>{const st=$('stage');let mode=null,last=null,pend=null,lastH=null;
+  st.oncontextmenu=e=>e.preventDefault();
+  st.onpointerdown=ev=>{if(!M||!glInit())return;st.setPointerCapture(ev.pointerId);
+    if(ev.button===1||((ev.button===2||tool==='rotate')&&ev.shiftKey)){ev.preventDefault();mode='pan';last=[ev.clientX,ev.clientY];st.style.cursor='move';return}
+    if(ev.button===2||tool==='rotate'){mode='rot';last=[ev.clientX,ev.clientY];st.style.cursor='grabbing';return}
+    if(!active){$('msg0').textContent=t('first');return}
+    mode='paint';lastH=null;pushUndo();
+    if(tool==='fillall'){fillAll();mode=null;renderSlots();return}
+    const h=pick(ev);if(h){if(tool==='bucket'){bucketAt(h.tri);mode=null;renderSlots()}else lastH=brushAt(h)}};
+  st.onpointermove=ev=>{ring(ev,true);if(mode==='rot'){const r=st.getBoundingClientRect();VW.yaw+=(ev.clientX-last[0])/r.width*Math.PI*1.6;VW.el=Math.max(-1.5,Math.min(1.5,VW.el+(ev.clientY-last[1])/r.height*Math.PI*1.2));last=[ev.clientX,ev.clientY];draw();return}
+    if(mode==='pan'){const r=GL.cv.getBoundingClientRect(),k=GL.cv.width/r.width/pxPerMm();VW.px+=(ev.clientX-last[0])*k;VW.py-=(ev.clientY-last[1])*k;last=[ev.clientX,ev.clientY];draw();return}
+    if(mode==='paint'&&tool!=='bucket'){pend=ev;if(!st._r)st._r=requestAnimationFrame(()=>{st._r=0;if(pend&&mode==='paint'){const h=pick(pend);if(h)lastH=brushAt(h,lastH)}})}};
+  const end=()=>{if(mode==='paint')renderSlots();mode=null;lastH=null;st.style.cursor='crosshair'};st.onpointerup=st.onpointercancel=end;st.onpointerleave=ev=>ring(ev,false);
+  st.onwheel=ev=>{ev.preventDefault();if(!M||!glInit())return;const cv=GL.cv,r=cv.getBoundingClientRect(),cx=(ev.clientX-r.left)*cv.width/r.width-cv.width/2,cy=cv.height/2-(ev.clientY-r.top)*cv.height/r.height,s0=pxPerMm(),X=cx/s0-VW.px,Y=cy/s0-VW.py;
+    VW.zoom=Math.max(0.4,Math.min(40,VW.zoom*Math.exp(-ev.deltaY*0.0015)));const s1=pxPerMm();VW.px=cx/s1-X;VW.py=cy/s1-Y;draw()};   // zoom vers le curseur
+  st.ondblclick=ev=>{if(tool==='rotate'||ev.button===1){VW.zoom=1;VW.px=VW.py=0;draw()}};st.style.cursor='crosshair'})();
+$('rad').oninput=()=>{$('radv').textContent=$('rad').value};$('ang').oninput=()=>{$('angv').textContent=$('ang').value};
+
+async function choose(f){
+  sel=f;showBig();collapse(true);M=null;slots=[];active=0;baseEdit=false;$('run').disabled=true;msg('');$('msg0').textContent=t('loading');
+  $('name').value=f.name.replace(/\.(3mf|stl)$/i,'')+'_peint';$('work').style.display='';$('outcard').style.display='block';renderSlots();
+  try{const d=await window.stellio.api('/api/x/paint-stock/model','json',{method:'POST',body:{path:f.path}});if(sel!==f)return;
+    M=buildModel(d);M.d._Tr0=M.Tr;M.maxEdge=maxEdge(M);recolorAll();$('msg0').textContent=t('info').replace('{x}',d.size[0].toFixed(1)).replace('{y}',d.size[1].toFixed(1)).replace('{z}',d.size[2].toFixed(1)).replace('{n}',d.faces)+(d.grid?t('reduced'):d.refine?t('refined').replace('{m}',d.proxy_faces):'');
+    VW.zoom=1;VW.px=VW.py=0;renderSlots();draw()}
+  catch(e){$('msg0').textContent='';msg(e.message,'err')}}
+
+let cur='',curSid='';   // dossier choisi : source + sous-dossier relatif
+function hereTxt(){const o=$('src').selectedOptions[0];return curSid?t('here')+(o?o.dataset.label:'')+(cur?' / '+cur.split('/').join(' / '):''):t('here')+t('same')}
+const opened=new Set();
+function addOpt(sid,sub,label,depth,after,path){const o=document.createElement('option');o.value=sid+'|'+sub;o.dataset.sid=sid;o.dataset.sub=sub;o.dataset.label=label;
+  const full=(path||after.dataset.path||'')+(depth&&sub?'/'+sub.split('/').pop():'');o.dataset.path=depth?full:(path||'');
+  o.textContent=(depth?'\uD83D\uDCC2 '+label+' / '+sub.split('/').join(' / '):'\uD83D\uDCC1 '+label)+(o.dataset.path?' ('+o.dataset.path+')':'');after.after(o);return o}
+async function expand(opt){const sid=opt.dataset.sid,sub=opt.dataset.sub,key=sid+'|'+sub;if(!sid||opened.has(key))return;opened.add(key);
+  try{const d=await window.stellio.api('/api/x/paint-stock/folders?source_id='+encodeURIComponent(sid)+'&sub='+encodeURIComponent(sub));
+    const depth=sub?sub.split('/').length:0;let prev=opt;
+    (d.folders||[]).forEach(f=>{prev=addOpt(sid,(sub?sub+'/':'')+f,opt.dataset.label,depth+1,prev,opt.dataset.path)})}catch(e){opened.delete(key)}}
+async function pickDest(){const o=$('src').selectedOptions[0];
+  if(!o||!o.dataset.sid){cur='';curSid='';$('here').textContent=hereTxt();return}
+  curSid=o.dataset.sid;cur=o.dataset.sub||'';$('here').textContent=hereTxt();await expand(o)}
+async function createIn(name){
+  const d=await window.stellio.api('/api/x/paint-stock/mkdir','json',{method:'POST',body:{source_id:curSid,sub:cur,name}});
+  const o=$('src').selectedOptions[0];await expand(o);
+  let n=[...$('src').options].find(x=>x.value===curSid+'|'+d.sub);
+  if(!n){let prev=o,i=$('src').selectedIndex+1;const dp=cur?cur.split('/').length:0;const pre=cur?cur+'/':'';
+    while($('src').options[i]&&$('src').options[i].dataset.sid===curSid&&$('src').options[i].dataset.sub.startsWith(pre)&&$('src').options[i].dataset.sub!==cur){prev=$('src').options[i];i++}
+    n=addOpt(curSid,d.sub,o.dataset.label,dp+1,prev,o.dataset.path)}
+  $('src').value=n.value;await pickDest();
+}
+async function selectPath(sid,sub){
+  let o=[...$('src').options].find(x=>x.value===sid+'|');if(!o)return false;
+  await expand(o);const parts=sub?sub.split('/'):[];let acc='';
+  for(const p of parts){acc=acc?acc+'/'+p:p;const n=[...$('src').options].find(x=>x.value===sid+'|'+acc);if(!n)break;o=n;await expand(o)}
+  $('src').value=o.value;await pickDest();return true}
+async function browse(){
+  try{const d=await window.stellio.api('/api/x/paint-stock/browse','json',{method:'POST',body:{}});
+    if(!(await selectPath(String(d.source_id),d.sub||'')))msg(t('outside'),'err');else msg('')}
+  catch(e){const m=String(e&&e.message||'');if(/annul|cancel/i.test(m))return false;
+    msg(/n'est dans aucune|aucune de tes sources|outside/i.test(m)?t('outside'):m,'err');return false}
+  return true}
+const ICO_PLUS='<svg viewBox="0 0 512 512" width="18" height="18" fill="currentColor"><path d="M512 416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96c0-35.3 28.7-64 64-64h128c20.1 0 39.1 9.5 51.2 25.6l19.2 25.6c6 8.1 15.5 12.8 25.6 12.8h160c35.3 0 64 28.7 64 64v256zM232 376c0 13.3 10.7 24 24 24s24-10.7 24-24v-64h64c13.3 0 24-10.7 24-24s-10.7-24-24-24h-64v-64c0-13.3-10.7-24-24-24s-24 10.7-24 24v64h-64c-13.3 0-24 10.7-24 24s10.7 24 24 24h64v64z"/></svg>';
+const ICO_OPEN='<svg viewBox="0 0 576 512" width="18" height="18" fill="currentColor"><path d="M88.7 223.8L0 375.8V96C0 60.7 28.7 32 64 32H181.5c17 0 33.3 6.7 45.3 18.7l26.5 26.5c12 12 28.3 18.7 45.3 18.7H416c35.3 0 64 28.7 64 64v32H144c-22.8 0-43.8 12.1-55.3 31.8zm27.6 16.1C122.1 230 132.6 224 144 224H544c11.5 0 22 6.1 27.7 16.1s5.7 22.2-.1 32.1l-112 192C453.9 474 443.4 480 432 480H32c-11.5 0-22-6.1-27.7-16.1s-5.7-22.2 .1-32.1l112-192z"/></svg>';
+async function openMk(){
+  if(!curSid)await browse();                                                        // comme pour les téléchargements : sans dossier choisi, l'explorateur s'ouvre
+  if(!curSid&&$('src').options.length>1){$('src').selectedIndex=1;await pickDest()}   // explorateur indisponible : première source
+  if(!curSid)return;
+  const ov=document.createElement('div');ov.className='mo';const md=document.createElement('div');md.className='md';ov.appendChild(md);
+  const h=document.createElement('h3');h.innerHTML='<span class="mi">'+ICO_PLUS+'</span>';const ht=document.createElement('span');ht.textContent=t('mkopen');h.appendChild(ht);md.appendChild(h);
+  const p=document.createElement('p');p.textContent=t('mkenter');md.appendChild(p);
+  const err=document.createElement('p');err.style.cssText='color:var(--st-danger,#ef4444);margin:-8px 0 12px;display:none';md.appendChild(err);
+  const inp=document.createElement('input');inp.maxLength=50;inp.placeholder=t('mkph');md.appendChild(inp);
+  const bt=document.createElement('div');bt.className='bt';const c=document.createElement('button');c.type='button';c.textContent=t('cancel');
+  const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=t('create');bt.appendChild(c);bt.appendChild(ok);md.appendChild(bt);
+  const close=()=>ov.remove();c.onclick=close;ov.onclick=e=>{if(e.target===ov)close()};
+  const go=async()=>{const name=inp.value.trim();if(!name){inp.style.borderColor='var(--st-danger,#ef4444)';return}
+    ok.disabled=true;try{await createIn(name);close()}catch(e){err.textContent=e.message;err.style.display='block';ok.disabled=false}};
+  ok.onclick=go;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}else if(e.key==='Escape')close()};
+  document.body.appendChild(ov);setTimeout(()=>inp.focus(),50);
+}
+let JOB=null,JOBX=false;
+const CXL={fr:['Annuler','Annulé.'],en:['Cancel','Cancelled.'],de:['Abbrechen','Abgebrochen.'],es:['Cancelar','Cancelado.'],it:['Annulla','Annullato.'],pt:['Cancelar','Cancelado.'],zh:['取消','已取消。'],ja:['キャンセル','キャンセルしました。']};
+function cxl(i){return(CXL[L]||CXL.en)[i]}
+function cxlBtn(on){document.querySelectorAll('.cxl').forEach(b=>b.remove());if(!on)return;
+  const a=['run','r_run'].map(id=>document.getElementById(id)).find(e=>e&&e.offsetParent);if(!a)return;
+  const b=document.createElement('button');b.type='button';b.className='cxl';b.textContent=cxl(0);
+  b.onclick=()=>{if(!JOB)return;JOBX=true;b.disabled=true;window.stellio.api('/api/jobs/'+encodeURIComponent(JOB)+'/cancel','json',{method:'POST'}).catch(()=>{})};
+  a.insertAdjacentElement('afterend',b)}
+async function runJob(path,body){
+  const r=await window.stellio.api(path,'json',{method:'POST',body:Object.assign({async:true},body)});
+  if(!r||!r.job_id)return r;                       // ancienne version de Stellio : réponse directe
+  JOB=r.job_id;JOBX=false;cxlBtn(true);
+  try{for(;;){await new Promise(z=>setTimeout(z,JOBX?150:600));
+    const j=await window.stellio.api('/api/jobs/'+encodeURIComponent(r.job_id));
+    if(j.state==='done'){const R=j.result||{};if(R.status>=400)throw new Error((R.body&&R.body.error)||'Erreur');return R.body}
+    if(j.state==='cancelled'||JOBX)throw new Error(cxl(1));
+    if(j.state==='failed')throw new Error(j.error||j.state)}}
+  finally{JOB=null;cxlBtn(false)}}
+function bytesB64(a){const u=new Uint8Array(a.buffer,a.byteOffset,a.byteLength);let s='';const CH=0x8000;for(let i=0;i<u.length;i+=CH)s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));return btoa(s)}
+function meshPayload(){return M.refined&&!M.d.grid?{pos:bytesB64(M.P),tris:bytesB64(M.Tr),center:M.d.center}:null}
+function statesB64(){const u=M.st;let s='';const CH=0x8000;for(let i=0;i<u.length;i+=CH)s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));return btoa(s)}
+$('run').onclick=async()=>{if(!sel||!M)return msg(t('pick'),'err');if(!slots.length)return msg(t('first'),'err');msg(t('busy'),'busy');$('run').disabled=true;
+  try{const d=await runJob('/api/x/paint-stock/paint',{path:sel.path,palette:slots.map(s=>({hex:s.hex,name:s.name,type:s.type})),states:statesB64(),grid:M.d.grid,refine:M.d.refine,mesh:meshPayload(),
+      bed_width:+$('bw').value||256,bed_depth:+$('bd').value||256,filename:$('name').value.trim(),source_id:curSid,target_subfolder:curSid?cur:''});finished(d)}
+  catch(e){msg(e.message,'err')}finally{$('run').disabled=false}};
+let timer;$('q').oninput=()=>{clearTimeout(timer);timer=setTimeout(search,250)};
+$('rad').addEventListener('input',()=>{});
+document.addEventListener('stellio-ready',async()=>{L=(window.stellio.lang||'fr').slice(0,2);if(!T[L])L='en';labels();
+  try{sources=await window.stellio.api('/api/sources')}catch(e){sources=[]}
+  $('src').innerHTML=`<option value="">${esc(t('selfold'))}</option>`;let prev=$('src').options[0];sources.filter(s=>!s.type||['folder','smb','nfs'].includes(s.type)).forEach(s=>{prev=addOpt(String(s.id),'',s.name||s.path,0,prev,String(s.path||''))});$('here').textContent=hereTxt();
+  $('src').onchange=pickDest;$('mkopen').onclick=openMk;$('browse').onclick=browse;search();loadStock()});
+labels();
+</script>

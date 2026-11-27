@@ -1,0 +1,32 @@
+{
+  "id": "split-color",
+  "name": "Split by color",
+  "version": "1.1.1",
+  "api": 1,
+  "author": "Stellio",
+  "description": {
+    "fr": "Sépare un modèle par couleur (3MF multicolore → un plateau par couleur) ou par région (3MF/STL coupé aux creux, aperçu 3D, graines au clic, 3MF peint ou plateaux).",
+    "en": "Splits a model by color (multicolor 3MF → one plate per color) or by region (3MF/STL cut at the creases, 3D preview, click-placed seeds, painted 3MF or plates).",
+    "de": "Trennt ein Modell nach Farbe (mehrfarbige 3MF → eine Platte pro Farbe) oder nach Region (3MF/STL an den Vertiefungen, 3D-Vorschau, Klick-Seeds, bemalte 3MF oder Platten).",
+    "es": "Separa un modelo por color (3MF multicolor → una bandeja por color) o por región (3MF/STL cortado por los huecos, vista 3D, semillas con clic, 3MF pintado o bandejas).",
+    "pt": "Separa um modelo por cor (3MF multicolor → uma mesa por cor) ou por região (3MF/STL cortado nas dobras, vista 3D, sementes, 3MF pintado ou mesas).",
+    "it": "Separa un modello per colore (3MF multicolore → un piatto per colore) o per regione (3MF/STL tagliato alle pieghe, anteprima 3D, semi, 3MF dipinto o piatti).",
+    "zh": "按颜色（多色 3MF → 每色一盘）或按区域（3MF/STL 沿凹缝切分，3D 预览，点击种子，彩绘 3MF 或分盘）拆分模型。",
+    "ja": "モデルを色別（マルチカラー 3MF → 色ごとに 1 プレート）または領域別（くぼみで分割、3D プレビュー、クリックでシード、塗装済み 3MF またはプレート）に分割します。"
+  },
+  "host": {
+    "modules": [
+      "split_color"
+    ]
+  },
+  "permissions": [
+    "ui",
+    "api:read",
+    "api:write"
+  ],
+  "ui": {
+    "title": "Split by color",
+    "icon": "fa-palette",
+    "entry": "split.html"
+  }
+}

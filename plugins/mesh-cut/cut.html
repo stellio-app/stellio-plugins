@@ -1,0 +1,419 @@
+<style>
+html,body{background:transparent}
+body{margin:0;padding:16px;color:var(--st-text,#eee);font:14px/1.5 system-ui,sans-serif}
+h1{font-size:18px;margin:0 0 4px}
+p.sub{margin:0 0 14px;color:var(--st-muted,#999)}
+.card{background:var(--st-card,#1b1b1b);border:1px solid var(--st-border,#333);border-radius:8px;padding:14px;margin-bottom:12px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:inherit;margin:10px 0 0}label.chk input{width:auto}
+label{display:block;font-size:12px;color:var(--st-muted,#999);margin:8px 0 3px}
+input,select{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:140px}
+button{padding:8px 14px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit;cursor:pointer}
+button.primary{background:var(--st-accent,#4ea1d3);border-color:transparent;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.files{max-height:380px;overflow:auto;margin-top:8px;padding:8px;border:1px solid var(--st-border,#333);border-radius:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.files .f{cursor:pointer;border:1px solid var(--st-border,#333);border-radius:8px;overflow:hidden;background:var(--st-panel,#161616);display:flex;flex-direction:column}
+.files .f.sel{outline:2px solid var(--st-accent,#4ea1d3);background:color-mix(in srgb,var(--st-accent,#4ea1d3) 22%,transparent)}
+.files .th{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.12);font-size:26px;opacity:1}
+.files .th img{width:100%;height:100%;object-fit:contain;display:block}
+.files .nm{padding:5px 7px;font-size:12px;line-height:1.25;word-break:break-all;max-height:3.9em;overflow:hidden}
+.files .none{grid-column:1/-1;padding:6px}
+#dest{display:none;flex:2 1 320px}
+.crumb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:2px 0 6px;font-size:13px}
+.crumb button{padding:2px 8px;font-size:12px}
+.dirs{max-height:170px;overflow:auto;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.dirs div{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--st-border,#333);display:flex;gap:8px;align-items:center}
+.dirs div:last-child{border-bottom:0}.dirs div:hover{background:color-mix(in srgb,var(--st-accent,#4ea1d3) 16%,transparent)}
+.dirs .none{cursor:default;opacity:.7}.dirs .none:hover{background:none}
+.srcrow{display:flex;gap:8px;align-items:center}.srcrow select{flex:1 1 0;width:auto;min-width:0}.srcrow .dsel{margin-top:0;flex:none}
+.dsel{display:flex;gap:8px;align-items:center;margin-top:8px}.dsel button{background:transparent;border-color:transparent;padding:6px 12px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.dsel button:hover{background:color-mix(in srgb,var(--st-text,#eee) 8%,transparent)}.dsel #mkopen{flex:1}.mi{display:inline-flex;color:var(--st-accent,#4ea1d3)}.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:50}.mo .md{background:var(--st-panel,#1e2129);border:1px solid var(--st-border,#2a2f3a);border-radius:16px;padding:28px;max-width:450px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.6)}.mo h3{margin:0 0 14px;font-size:18px;display:flex;gap:12px;align-items:center}.mo h3 .mi svg{width:24px;height:24px}.mo p{margin:0 0 14px;opacity:.75;line-height:1.5}.mo input{padding:12px 16px;border:2px solid var(--st-border,#2a2f3a);border-radius:10px;margin-bottom:20px;background:var(--st-bg,#161a22)}.mo input:focus{outline:none;border-color:var(--st-accent,#4ea1d3);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-accent,#4ea1d3) 35%,transparent)}.mo .bt button:not(.primary){background:var(--st-hover,#2a2f3a)}.mo .bt{display:flex;gap:12px;justify-content:flex-end}.mo .bt button{padding:11px 24px;border-radius:10px;border:none}.mo .bt .primary{font-weight:600}.mk{display:flex;gap:8px;margin-top:8px}.mk input{flex:1}
+.here{margin-top:6px;font-size:12px;opacity:.85}
+.dots{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:dotb 1.2s infinite ease-in-out both}.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}@keyframes dotb{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
+#view{display:none;margin-top:14px}
+#view .hint{font-size:12px;opacity:.7;margin-bottom:8px}
+#view .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+#view .card{border:1px solid var(--st-border,#333);border-radius:8px;background:var(--st-panel,#161616);overflow:hidden}
+#view canvas{width:100%;height:auto;aspect-ratio:1;display:block;cursor:grab;touch-action:none}
+#view .cap{padding:5px 8px;font-size:12px;display:flex;gap:6px;align-items:center;border-top:1px solid var(--st-border,#333)}
+#view .cap i{width:12px;height:12px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#big{display:none;margin-top:10px;gap:12px;align-items:center}
+#big button{flex:none}
+#big img{width:96px;height:96px;object-fit:contain;border-radius:8px;border:1px solid var(--st-border,#333);background:rgba(127,127,127,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.chip i{width:14px;height:14px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#msg{margin-top:10px;padding:9px 11px;border-radius:6px;border:1px solid var(--st-border,#333);display:none}
+#msg.finished{display:flex!important;align-items:center;gap:14px;padding:16px 18px;border:2px solid var(--st-success,#30a46c);background:color-mix(in srgb,var(--st-success,#30a46c) 14%,transparent);animation:pop .45s ease-out}#msg.finished .tick{flex:none;width:38px;height:38px;border-radius:50%;background:var(--st-success,#30a46c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}#msg.finished b{display:block;font-size:15px}#msg.finished small{opacity:.8}@keyframes pop{0%{transform:scale(.96);opacity:0}60%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+#msg.err{border-color:var(--st-danger,#e5484d)}#msg.ok{border-color:var(--st-success,#30a46c)}
+.cuts .cut{display:flex;gap:8px;align-items:center;margin:6px 0}.cuts .cut select{width:72px;flex:none}.cuts .cut input[type=range]{flex:1;padding:0}.cuts .cut input[type=number]{width:84px;flex:none}
+.cuts .cut button{padding:4px 10px}.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.work{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);gap:16px;align-items:start}.wl{position:sticky;top:8px}@media(max-width:900px){.work{grid-template-columns:1fr}.wl{position:static}}
+#stage{position:relative}#stage canvas{width:100%;height:auto;aspect-ratio:4/3;display:block;border:1px solid var(--st-border,#333);border-radius:8px;background:rgba(127,127,127,.08);cursor:grab;touch-action:none}
+.pl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pl .chip small{opacity:.7}
+.hint{font-size:12px;opacity:.7}.seg{display:flex;gap:8px;flex-wrap:wrap}.seg>div{flex:1;min-width:140px}
+h2{font-size:14px;margin:0 0 6px}
+.oc{margin-top:16px;padding-top:12px;border-top:1px solid var(--st-border,#333)}.oc .btns{margin-top:10px}
+</style>
+<h1 id="t_title"></h1>
+<p class="sub" id="t_intro"></p>
+<div class="card">
+  <div id="pick">
+    <label id="t_search"></label>
+    <input id="q" type="search" autocomplete="off">
+    <div class="files" id="files"></div>
+  </div>
+</div>
+<div class="card work" id="work" style="display:none">
+  <div class="wl">
+    <div id="stage"><canvas id="cvg" width="800" height="600"></canvas><canvas id="cv" width="800" height="600" style="display:none"></canvas></div>
+    <div class="pl" id="pl"></div>
+    <div id="exrow" style="display:none;margin-top:8px"><label id="t_explode"></label><input id="explode" type="range" min="0" max="100" value="35"></div>
+  </div>
+  <div class="wr">
+    <h2 id="t_cuth"></h2>
+    <div class="hint" id="t_dims"></div>
+    <div class="btns" id="addbtns"><button type="button" id="ax_x"></button><button type="button" id="ax_y"></button><button type="button" id="ax_z"></button><button type="button" id="auto"></button></div>
+    <div class="cuts" id="cuts"></div>
+    <div class="seg" style="margin-top:8px">
+      <div><label id="t_bw"></label><input id="bw" type="number" min="20" value="220"></div>
+      <div><label id="t_bd"></label><input id="bd" type="number" min="20" value="220"></div>
+      <div><label id="t_bh"></label><input id="bh" type="number" min="20" value="250"></div>
+    </div>
+    <h2 id="t_cnh" style="margin-top:16px"></h2>
+    <div class="seg">
+      <div><label id="t_joint"></label><select id="joint"><option value="peg"></option><option value="dowel"></option><option value="magnet"></option><option value="none"></option></select></div>
+      <div id="shapebox"><label id="t_shape"></label><select id="shape"><option value="round"></option><option value="square"></option><option value="cross"></option></select></div>
+      <div><label id="t_fit"></label><select id="fit"><option value="0.1"></option><option value="0.2" selected></option><option value="0.35"></option></select></div>
+    </div>
+    <div class="seg">
+      <div><label id="t_csize"></label><input id="csize" type="number" min="3" max="40" step="0.5" value="8"></div>
+      <div><label id="t_clen"></label><input id="clen" type="number" min="2" max="40" step="0.5" value="8"></div>
+      <div><label id="t_cclr"></label><input id="cclr" type="number" min="0" max="1" step="0.05" value="0.2"></div>
+      <div id="mdbox" style="display:none"><label id="t_md"></label><input id="md" type="number" min="1" max="20" step="0.5" value="3"></div>
+    </div>
+    <div class="hint" id="t_jointh" style="margin-top:6px"></div>
+    <div class="btns"><button type="button" id="preview"></button></div>
+<div id="outcard" class="oc" style="display:none">
+    <div class="row"><div><label id="t_name"></label><input id="name" maxlength="120"></div></div>
+    <div>
+      <label id="t_src"></label>
+      <div class="srcrow"><select id="src"></select><div class="dsel"><button type="button" id="mkopen"></button><button type="button" id="browse" class="ico"></button></div></div>
+      <div class="hint" id="t_savehint" style="margin-top:6px"></div>
+      <div class="here" id="here"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="guide" checked><span id="t_guide"></span></label>
+    <div class="btns"><button id="run" class="primary" disabled></button><button type="button" id="chg" style="display:none"></button></div>
+    <div id="msg"></div>
+  </div>
+  </div>
+</div>
+<script>
+const T={
+fr:{change:'Changer de modèle',title:'Découpe 3D',intro:'Découpe un modèle 3MF ou STL en pièces qui tiennent sur le plateau, avec connecteurs d\'emboîtement, pièces posées à plat et guide d\'assemblage PDF. Le fichier d\'origine n\'est pas modifié.',
+ search:'Rechercher un modèle (3MF / STL) de la bibliothèque',none:'Aucun modèle trouvé.',pick:'Choisissez d\'abord un modèle.',busy:'Traitement…',
+ cuth:'Plans de coupe',dims:'Dimensions : {x} × {y} × {z} mm',ax_x:'+ Coupe X',ax_y:'+ Coupe Y',ax_z:'+ Coupe Z',auto:'Automatique selon le plateau',
+ bw:'Plateau : largeur (mm)',bd:'Plateau : profondeur (mm)',bh:'Hauteur max d\'impression (mm)',del:'Supprimer',
+ cnh:'Connecteurs d\'emboîtement',joint:'Type de jonction',j_peg:'Tenon + logement (mâle / femelle)',j_dowel:'Logements + tige libre (femelle / femelle)',j_magnet:'Logements d\'aimant',j_none:'Aucun connecteur',
+ shape:'Forme',s_round:'Rond',s_square:'Carré',s_cross:'Croix',fit:'Ajustement',f_tight:'Serré (0,1 mm)',f_norm:'Normal (0,2 mm)',f_loose:'Lâche (0,35 mm)',
+ csize:'Taille / diamètre (mm)',clen:'Longueur du tenon (mm)',cclr:'Jeu du logement (mm)',md:'Épaisseur de l\'aimant (mm)',
+ jh_peg:'Un tenon est soudé à la pièce du dessous, le logement (avec du jeu) est creusé dans celle du dessus. Un second tenon est ajouté si la surface de coupe est longue.',
+ jh_dowel:'Chaque pièce reçoit un logement ; des tiges libres sont ajoutées au 3MF, à imprimer et à coller.',jh_magnet:'Un logement rond par face de coupe : diamètre = taille, profondeur = épaisseur de l\'aimant.',jh_none:'Les pièces sont seulement découpées, sans emboîtement.',
+ preview:'Aperçu des pièces',explode:'Éclater',pieces:'{n} pièces',
+ name:'Nom du nouveau fichier',src:'Enregistrer dans (source)',savehint:'Choisis où enregistrer le 3MF et le guide.',guide:'Créer aussi le guide d\'assemblage (PDF)',run:'Découper et créer le 3MF',
+ fin:'Terminé',done:'{p} pièces, {c} connecteur(s) — {f}',pdf:'guide : {g}',dow:'{n} tige(s) libre(s) à imprimer',big:'Attention : une pièce dépasse le plateau indiqué.',
+ outside:'Ce dossier n\'est dans aucune de tes sources : ajoute-le d\'abord comme source, ou choisis un dossier de la liste.',
+ mkenter:'Entrez le nom du nouveau dossier',mkph:'Nom du dossier',cancel:'Annuler',create:'Créer',browse:'Parcourir',selfold:'Veuillez sélectionner un dossier.',mkopen:'Créer un dossier...',here:'Enregistrement dans : ',same:'Dossier du fichier d\'origine',nocut:'Ajoutez au moins un plan de coupe.',autoNone:'Le modèle tient déjà sur le plateau : aucune coupe nécessaire.'},
+en:{change:'Change model',title:'3D cutter',intro:'Cuts a 3MF or STL model into pieces that fit your bed, with alignment connectors, pieces laid flat and a PDF assembly guide. The original file is never modified.',
+ search:'Search a model (3MF / STL) in the library',none:'No model found.',pick:'Pick a model first.',busy:'Working…',
+ cuth:'Cut planes',dims:'Size: {x} × {y} × {z} mm',ax_x:'+ X cut',ax_y:'+ Y cut',ax_z:'+ Z cut',auto:'Automatic for the bed',
+ bw:'Bed width (mm)',bd:'Bed depth (mm)',bh:'Max print height (mm)',del:'Delete',
+ cnh:'Alignment connectors',joint:'Joint type',j_peg:'Peg + socket (male / female)',j_dowel:'Sockets + loose dowel (female / female)',j_magnet:'Magnet sockets',j_none:'No connector',
+ shape:'Shape',s_round:'Round',s_square:'Square',s_cross:'Cross',fit:'Fit',f_tight:'Tight (0.1 mm)',f_norm:'Normal (0.2 mm)',f_loose:'Loose (0.35 mm)',
+ csize:'Size / diameter (mm)',clen:'Peg length (mm)',cclr:'Socket clearance (mm)',md:'Magnet thickness (mm)',
+ jh_peg:'A peg is fused to the lower piece and the socket (with clearance) is cut in the upper one. A second peg is added on long cut faces.',
+ jh_dowel:'Each piece gets a socket; loose dowels are added to the 3MF to print and glue.',jh_magnet:'One round socket per cut face: diameter = size, depth = magnet thickness.',jh_none:'Pieces are only cut, with no interlock.',
+ preview:'Preview pieces',explode:'Explode',pieces:'{n} pieces',
+ name:'New file name',src:'Save to (source)',savehint:'Choose where to save the 3MF and the guide.',guide:'Also create the assembly guide (PDF)',run:'Cut and create the 3MF',
+ fin:'Done',done:'{p} pieces, {c} connector(s) — {f}',pdf:'guide: {g}',dow:'{n} loose dowel(s) to print',big:'Warning: a piece is larger than the bed.',
+ outside:'This folder is not in any of your sources: add it as a source first, or pick a folder from the list.',
+ mkenter:'Enter the new folder name',mkph:'Folder name',cancel:'Cancel',create:'Create',browse:'Browse',selfold:'Please select a folder.',mkopen:'Create a folder...',here:'Saving to: ',same:'Folder of the original file',nocut:'Add at least one cut plane.',autoNone:'The model already fits the bed: no cut needed.'}
+};
+let L='fr',sel=null,sources=[],size=null,model=null,cuts=[],pieces=null;
+const $=id=>document.getElementById(id),t=k=>(T[L]||T.en)[k]||T.en[k]||k;
+function esc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function labels(){
+  const m={t_title:'title',t_intro:'intro',t_search:'search',t_cuth:'cuth',t_bw:'bw',t_bd:'bd',t_bh:'bh',t_cnh:'cnh',t_joint:'joint',t_shape:'shape',t_fit:'fit',t_csize:'csize',t_clen:'clen',t_cclr:'cclr',t_md:'md',t_name:'name',t_src:'src',t_guide:'guide',t_explode:'explode'};
+  for(const k in m)$(k).textContent=t(m[k]);
+  ['x','y','z'].forEach(a=>$('ax_'+a).textContent=t('ax_'+a));$('auto').textContent=t('auto');$('preview').textContent=t('preview');$('run').textContent=t('run');
+  const o=(id,keys)=>[...$(id).options].forEach((op,i)=>op.textContent=t(keys[i]));
+  o('joint',['j_peg','j_dowel','j_magnet','j_none']);o('shape',['s_round','s_square','s_cross']);o('fit',['f_tight','f_norm','f_loose']);
+  $('mkopen').innerHTML='<span class="mi">'+ICO_PLUS+'</span> ';$('mkopen').appendChild(document.createTextNode(t('mkopen')));$('browse').innerHTML=ICO_OPEN;$('browse').title=t('browse');$('t_savehint').textContent=t('savehint');
+  jointUi();showDims();
+}
+function msg(txt,cls){const m=$('msg');m.textContent=cls==='busy'?String(txt).replace(/[….]+$/,''):txt;m.className=cls||'';if(cls==='busy'){const d=document.createElement('span');d.className='dots';d.innerHTML='<i></i><i></i><i></i>';m.appendChild(d)}m.style.display=txt?'block':'none'}
+function finished(d){const m=$('msg');m.className='finished';m.innerHTML='';
+  const k=document.createElement('div');k.className='tick';k.textContent='✓';const w=document.createElement('div');
+  const b=document.createElement('b');b.textContent=t('fin')+' — '+t('done').replace('{p}',d.piece_count).replace('{c}',d.connectors).replace('{f}',d.output_filename);w.appendChild(b);
+  const parts=[];if(d.guide)parts.push(t('pdf').replace('{g}',d.guide));if(d.dowels)parts.push(t('dow').replace('{n}',d.dowels));if(d.too_big)parts.push(t('big'));
+  const sm=document.createElement('small');sm.style.display='block';sm.textContent=parts.join(' · ');if(sm.textContent)w.appendChild(sm);
+  m.appendChild(k);m.appendChild(w);m.style.display='flex';try{m.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}}
+const thumbs=new Map();
+function mime(b){const u=new Uint8Array(b);if(u[0]===0x89&&u[1]===0x50)return'image/png';if(u[0]===0xff&&u[1]===0xd8)return'image/jpeg';return'image/webp'}
+let thN=0;const thQ=[];   // au plus 3 miniatures demandées en même temps : l'application reste fluide
+function thNext(){while(thN<3&&thQ.length){const j=thQ.shift();thN++;j().finally(()=>{thN--;thNext()})}}
+function thumbUrl(path){
+  if(!thumbs.has(path))thumbs.set(path,new Promise(ok=>{thQ.push(()=>window.stellio.api('/api/thumb?path='+encodeURIComponent(path),'arraybuffer')
+    .then(b=>ok(URL.createObjectURL(new Blob([b],{type:mime(b)})))).catch(()=>ok(null)));thNext()}));
+  return thumbs.get(path);
+}
+function fill(el,path){thumbUrl(path).then(u=>{if(u){el.innerHTML='';const i=new Image();i.alt='';i.src=u;el.appendChild(i)}})}
+let io=null;
+function lazy(el,path){
+  if(!('IntersectionObserver' in window))return fill(el,path);
+  if(!io)io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);fill(e.target,e.target.dataset.p)}}),{root:$('files'),rootMargin:'120px'});
+  el.dataset.p=path;io.observe(el);
+}
+function collapse(on){const c=$('pick').closest('.card');c.style.display=on?'none':'';if(!on){try{c.scrollIntoView({block:'nearest'})}catch(e){}}}
+$('chg').onclick=()=>collapse(false);
+function showBig(){const b=$('chg');b.style.display=sel?'':'none';b.textContent=t('change')}
+
+async function search(){
+  try{const d=await window.stellio.api('/api/x/mesh-cut/files?q='+encodeURIComponent($('q').value.trim()));
+    const box=$('files');if(io)io.disconnect();
+    box.innerHTML=(d.files||[]).map((f,i)=>`<div class="f${sel&&sel.path===f.path?' sel':''}" data-i="${i}" title="${esc(f.path)}"><div class="th"><i>&#9638;</i></div><div class="nm">${esc(f.name)}</div></div>`).join('')||`<div class="none">${esc(t('none'))}</div>`;
+    box.querySelectorAll('.f').forEach(el=>{const f=d.files[+el.dataset.i];lazy(el.querySelector('.th'),f.path);
+      el.onclick=()=>{box.querySelectorAll('.f').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');choose(f)}});
+  }catch(e){msg(e.message,'err')}
+}
+async function choose(f){
+  sel=f;showBig();collapse(true);cuts=[];pieces=null;model=null;$('pl').innerHTML='';$('exrow').style.display='none';$('run').disabled=true;msg('');
+  $('name').value=f.name.replace(/\.(3mf|stl)$/i,'')+'_decoupe';
+  $('work').style.display='';$('outcard').style.display='block';renderCuts();
+  msg(t('busy'),'busy');
+  try{const d=await window.stellio.api('/api/x/mesh-cut/model','json',{method:'POST',body:{path:f.path}});
+    if(sel!==f)return;size=d.size;model=prep(d.preview);showDims();msg('');draw();$('run').disabled=false}
+  catch(e){msg(e.message,'err')}
+}
+function showDims(){$('t_dims').textContent=size?t('dims').replace('{x}',size[0].toFixed(1)).replace('{y}',size[1].toFixed(1)).replace('{z}',size[2].toFixed(1)):''}
+function jointUi(){const j=$('joint').value;$('shapebox').style.display=j==='magnet'||j==='none'?'none':'';$('mdbox').style.display=j==='magnet'?'':'none';
+  $('t_jointh').textContent=t('jh_'+j);['csize','clen','cclr','fit'].forEach(i=>$(i).closest('div').style.display=j==='none'?'none':'')}
+$('joint').onchange=jointUi;$('fit').onchange=()=>{$('cclr').value=$('fit').value};
+function showBig(){const b=$('chg');b.style.display=sel?'':'none';b.textContent=t('change')}
+
+/* ── plans de coupe ── */
+const AXN={x:0,y:1,z:2};
+function renderCuts(){const box=$('cuts');box.innerHTML='';
+  cuts.forEach((c,i)=>{const row=document.createElement('div');row.className='cut';
+    const lim=size?size[AXN[c.axis]]:100;
+    row.innerHTML=`<select>${['x','y','z'].map(a=>`<option value="${a}"${a===c.axis?' selected':''}>${a.toUpperCase()}</option>`).join('')}</select><input type="range" min="1" max="${Math.max(2,lim-1).toFixed(1)}" step="0.5" value="${c.pos}"><input type="number" step="0.5" value="${c.pos}"><button type="button">✕</button>`;
+    const [s,r,n,b]=row.children;
+    s.onchange=()=>{c.axis=s.value;c.pos=Math.min(c.pos,size?size[AXN[c.axis]]-1:c.pos);renderCuts();dirty()};
+    r.oninput=()=>{c.pos=+r.value;n.value=r.value;dirty();draw()};n.onchange=()=>{c.pos=+n.value;r.value=n.value;dirty();draw()};
+    b.title=t('del');b.onclick=()=>{cuts.splice(i,1);renderCuts();dirty()};
+    box.appendChild(row)});draw()}
+function dirty(){pieces=null;$('pl').innerHTML='';$('exrow').style.display='none';draw()}
+['x','y','z'].forEach(a=>$('ax_'+a).onclick=()=>{if(!size)return;cuts.push({axis:a,pos:+(size[AXN[a]]/2).toFixed(1)});renderCuts();dirty()});
+$('auto').onclick=()=>{if(!size)return;const bed=[+$('bw').value||220,+$('bd').value||220,+$('bh').value||250];cuts=[];
+  ['x','y','z'].forEach((a,k)=>{const lim=Math.max(bed[k]-2,10),n=Math.ceil(size[k]/lim-1e-9)-1;for(let i=1;i<=n;i++)cuts.push({axis:a,pos:+(size[k]*i/(n+1)).toFixed(1)})});
+  if(!cuts.length)msg(t('autoNone'),'ok');else msg('');renderCuts();dirty()};
+
+/* ── rendu 3D (canvas) : modèle + plans, ou pièces éclatées ── */
+const VW={yaw:-0.6,el:0.62};
+function decode(p){const s=atob(p.tris),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Int16Array(u.buffer)}
+function shade(hex,k){const n=parseInt(hex.slice(1),16);return'rgb('+[(n>>16)&255,(n>>8)&255,n&255].map(c=>Math.round(c*k)).join(',')+')'}
+function zoneHex(i,n){const h=(i/Math.max(n,1))%1,idx=Math.floor(h*6)%6,f=(h*6)%1,hi=0.92,lo=hi*0.45,d=hi*(1-0.55*f),u=hi*(1-0.55*(1-f));
+  const rgb=[[hi,u,lo],[d,hi,lo],[lo,hi,u],[lo,d,hi],[u,lo,hi],[hi,lo,d]][idx].map(x=>Math.round(x*255));return'#'+rgb.map(x=>x.toString(16).padStart(2,'0')).join('')}
+/* Rendu optimisé : tout est précalculé une fois (positions, normales, centres) ; à chaque image, projection + tri par seaux + remplissage (aucune chaîne de couleur recréée). */
+function prep(pv){
+  const q=pv.q,ex=pv.extent,tris=[],cols=[];let n=0;pv.pieces.forEach(p=>n+=decode(p).length/9);
+  const pos=new Float32Array(n*9),nrm=new Float32Array(n*3),pid=new Uint16Array(n),ctr=[];let o=0,t=0;
+  pv.pieces.forEach((p,pi)=>{const a=decode(p),m=a.length/9,c=pcenter(a);ctr.push(c.map(v=>v/q));cols.push(p.hex);
+    for(let i=0;i<m;i++){for(let k=0;k<9;k++)pos[o+k]=a[i*9+k]/q;
+      const ux=pos[o+3]-pos[o],uy=pos[o+4]-pos[o+1],uz=pos[o+5]-pos[o+2],vx=pos[o+6]-pos[o],vy=pos[o+7]-pos[o+1],vz=pos[o+8]-pos[o+2];
+      let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nrm[t*3]=nx/l;nrm[t*3+1]=ny/l;nrm[t*3+2]=nz/l;pid[t]=pi;o+=9;t++}});
+  return{q,extent:ex,n,pos,nrm,pid,ctr,cols,zone:null,zkey:''}}
+function pcenter(a){let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(let i=0;i<a.length;i+=3)for(let k=0;k<3;k++){const v=a[i+k];if(v<lo[k])lo[k]=v;if(v>hi[k])hi[k]=v}return[0,1,2].map(k=>(lo[k]+hi[k])/2)}
+const LV=24,pal=new Map();
+function colStr(base,lv){const k=base+lv;let s=pal.get(k);if(!s){s=shade(base,0.38+0.62*lv/(LV-1));pal.set(k,s)}return s}
+function zonesFor(S){
+  const key=cuts.map(c=>c.axis+c.pos).join('|');if(S.zkey===key&&S.zone)return;S.zkey=key;S.bases=[];
+  const nz=1<<cuts.length;for(let i=0;i<nz;i++)S.bases.push(zoneHex(i,nz));
+  const z=new Uint16Array(S.n),sz=size;
+  for(let t=0;t<S.n;t++){let v=0;for(let ci=0;ci<cuts.length;ci++){const c=cuts[ci],ax=AXN[c.axis],m=(S.pos[t*9+ax]+S.pos[t*9+3+ax]+S.pos[t*9+6+ax])/3+sz[ax]/2;if(m>c.pos)v|=1<<ci}z[t]=v}S.zone=z}
+let raf=0;function draw(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})}
+function render(){if(glInit())renderGL();else render2d()}
+function render2d(){
+  const cv=$('cv');if(!cv||!model)return;const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const S=pieces||model,e=S.extent,R=Math.hypot(e[0],e[1],e[2])/2*(pieces?1.25:1),sc=Math.min(W,H)/2/R*0.9;
+  const cy=Math.cos(VW.yaw),sy=Math.sin(VW.yaw),ce=Math.cos(VW.el),se=Math.sin(VW.el);
+  const useZ=!pieces&&cuts.length&&size;if(useZ)zonesFor(S);
+  const ex=pieces?(+$('explode').value/100)*0.8:0,N=S.n,pos=S.pos,nrm=S.nrm,PX=new Float32Array(N*3),PY=new Float32Array(N*3),D=new Float32Array(N),K=new Uint8Array(N);
+  let dmin=1e30,dmax=-1e30;
+  for(let t=0;t<N;t++){let ox=0,oy=0,oz=0;if(ex){const c=S.ctr[S.pid[t]];ox=c[0]*ex;oy=c[1]*ex;oz=c[2]*ex}let dz=0;
+    for(let j=0;j<3;j++){const x=pos[t*9+j*3]+ox,y=pos[t*9+j*3+1]+oy,z=pos[t*9+j*3+2]+oz,x1=x*cy-y*sy,y1=x*sy+y*cy;PX[t*3+j]=x1;PY[t*3+j]=z*ce+y1*se;dz+=y1*ce-z*se}
+    D[t]=dz;if(dz<dmin)dmin=dz;if(dz>dmax)dmax=dz;
+    const nx=nrm[t*3],ny=nrm[t*3+1],nz=nrm[t*3+2],x1=nx*cy-ny*sy,y1=nx*sy+ny*cy,vy=nz*ce+y1*se,vz=y1*ce-nz*se,k=Math.abs(-0.3*x1+0.45*vy+0.55*vz);K[t]=Math.min(LV-1,Math.floor(k*(LV-1)))}
+  const B=2048,cnt=new Uint32Array(B+1),span=(dmax-dmin)||1;
+  for(let t=0;t<N;t++){const b=Math.min(B-1,Math.floor((dmax-D[t])/span*B));D[t]=b;cnt[b+1]++}   // le plus loin d'abord
+  for(let i=0;i<B;i++)cnt[i+1]+=cnt[i];const ord=new Uint32Array(N);for(let t=0;t<N;t++)ord[cnt[D[t]]++]=t;
+  const X=v=>W/2+v*sc,Y=v=>H*0.52-v*sc;ctx.lineJoin='round';ctx.lineWidth=0.7;let last='';
+  for(let i=0;i<N;i++){const t=ord[i],base=useZ?S.bases[S.zone[t]]:S.cols[S.pid[t]],cs=colStr(base,K[t]);
+    if(cs!==last){ctx.fillStyle=cs;ctx.strokeStyle=cs;last=cs}
+    const x0=X(PX[t*3]),y0=Y(PY[t*3]),x1=X(PX[t*3+1]),y1=Y(PY[t*3+1]),x2=X(PX[t*3+2]),y2=Y(PY[t*3+2]),mx=(x0+x1+x2)/3,my=(y0+y1+y2)/3,g=1.08;   // triangle agrandi de 8 % : plus de fentes entre voisins, sans trait
+    ctx.beginPath();ctx.moveTo(mx+(x0-mx)*g,my+(y0-my)*g);ctx.lineTo(mx+(x1-mx)*g,my+(y1-my)*g);ctx.lineTo(mx+(x2-mx)*g,my+(y2-my)*g);ctx.fill()}
+  if(!pieces&&size)cuts.forEach(c=>{const a=AXN[c.axis],h=[e[0]/2,e[1]/2,e[2]/2].map(v=>v*1.08),v=c.pos-size[a]/2,pts=[],ot=[0,1,2].filter(k=>k!==a);
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([u,w])=>{const p=[0,0,0];p[a]=v;p[ot[0]]=u*h[ot[0]];p[ot[1]]=w*h[ot[1]];const x1=p[0]*cy-p[1]*sy,y1=p[0]*sy+p[1]*cy;pts.push([x1,p[2]*ce+y1*se])});
+    ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1])));ctx.closePath();ctx.fillStyle='rgba(78,161,211,.28)';ctx.fill();ctx.strokeStyle='rgba(78,161,211,.95)';ctx.lineWidth=1.6;ctx.stroke()});
+}
+
+/* ── rendu WebGL (carte graphique) : tampon de profondeur, aucun tri ; repli sur le canvas 2D si WebGL est indisponible ── */
+const VS=`attribute vec3 aPos;attribute vec3 aNrm;attribute vec3 aCtr;attribute vec3 aCol;uniform vec4 uT;uniform float uEx;uniform vec2 uSc;uniform float uInvR;varying vec3 vCol;varying float vK;varying vec3 vP;
+void main(){vP=aPos;vec3 p=aPos+aCtr*uEx;float x1=p.x*uT.x-p.y*uT.y;float y1=p.x*uT.y+p.y*uT.x;
+gl_Position=vec4(x1*uSc.x,(p.z*uT.z+y1*uT.w)*uSc.y,(y1*uT.z-p.z*uT.w)*uInvR*0.9,1.0);
+float nx=aNrm.x*uT.x-aNrm.y*uT.y;float ny=aNrm.x*uT.y+aNrm.y*uT.x;float vy=aNrm.z*uT.z+ny*uT.w;float vz=ny*uT.z-aNrm.z*uT.w;
+vK=0.38+0.62*abs(-0.3*nx+0.45*vy+0.55*vz);vCol=aCol;}`;
+const FS1='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+'varying vec3 vCol;varying float vK;varying vec3 vP;uniform float uZn;uniform vec4 uCut[8];'+
+ 'vec3 zc(float h){float hi=0.92,lo=hi*0.45;float k=floor(h*6.0);float f=h*6.0-k;float d=hi*(1.0-0.55*f),u=hi*(1.0-0.55*(1.0-f));'+
+ 'if(k<0.5)return vec3(hi,u,lo);if(k<1.5)return vec3(d,hi,lo);if(k<2.5)return vec3(lo,hi,u);if(k<3.5)return vec3(lo,d,hi);if(k<4.5)return vec3(u,lo,hi);return vec3(hi,lo,d);}'+
+ 'void main(){vec3 c=vCol;if(uZn>0.5){float z=0.0,w=1.0;for(int i=0;i<8;i++){if(float(i)<uZn){if(dot(vP,uCut[i].xyz)>uCut[i].w)z+=w;w*=2.0;}}c=zc(fract(z/w));}gl_FragColor=vec4(c*vK,1.0);}';   // zones coupées exactement par les plans (par pixel), pas par triangle
+const FS2='precision mediump float;varying vec3 vCol;uniform float uA;void main(){gl_FragColor=vec4(vCol,uA);}';
+let GL=null;
+function hexRGB(x){const n=parseInt(x.slice(1),16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255]}
+function glInit(){
+  if(GL!==null)return!!GL;
+  try{const cv=$('cvg'),gl=cv.getContext('webgl',{antialias:true,alpha:true});if(!gl)throw 0;
+    const mk=(fs)=>{const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+      const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+      ['aPos','aNrm','aCtr','aCol'].forEach((n,i)=>gl.bindAttribLocation(p,i,n));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('link');
+      const u={};['uT','uEx','uSc','uInvR','uA','uZn'].forEach(n=>u[n]=gl.getUniformLocation(p,n));u.uCut=gl.getUniformLocation(p,'uCut');return{p,u}};
+    GL={gl,cv,m:mk(FS1),pl:mk(FS2),bufs:[0,1,2,3].map(()=>gl.createBuffer()),pb:[0,1,2,3].map(()=>gl.createBuffer())};
+    $('cv').style.display='none';cv.style.display='block';
+    if(window.ResizeObserver)new ResizeObserver(()=>draw()).observe($('stage'));
+    return true}catch(e){GL=false;$('cv').style.display='block';$('cvg').style.display='none';return false}}
+function glData(S){
+  if(S.g)return S.g;const N=S.n,nr=new Float32Array(N*9),ct=new Float32Array(N*9);
+  for(let t=0;t<N;t++){const c=S.ctr[S.pid[t]];for(let j=0;j<3;j++){nr[t*9+j*3]=S.nrm[t*3];nr[t*9+j*3+1]=S.nrm[t*3+1];nr[t*9+j*3+2]=S.nrm[t*3+2];ct[t*9+j*3]=c[0];ct[t*9+j*3+1]=c[1];ct[t*9+j*3+2]=c[2]}}
+  const gl=GL.gl,up=(i,a)=>{gl.bindBuffer(gl.ARRAY_BUFFER,GL.bufs[i]);gl.bufferData(gl.ARRAY_BUFFER,a,gl.STATIC_DRAW)};
+  up(0,S.pos);up(1,nr);up(2,ct);S.g={col:new Float32Array(N*9),ckey:''};return S.g}
+function glColors(S,useZ){
+  const g=S.g,key=useZ?'z'+S.zkey:'p';if(g.ckey===key)return;g.ckey=key;const N=S.n,gl=GL.gl;
+  const pal=(useZ?S.bases:S.cols).map(hexRGB);
+  for(let t=0;t<N;t++){const c=pal[useZ?S.zone[t]:S.pid[t]];for(let j=0;j<3;j++){g.col[t*9+j*3]=c[0];g.col[t*9+j*3+1]=c[1];g.col[t*9+j*3+2]=c[2]}}
+  gl.bindBuffer(gl.ARRAY_BUFFER,GL.bufs[3]);gl.bufferData(gl.ARRAY_BUFFER,g.col,gl.DYNAMIC_DRAW)}
+function renderGL(){
+  if(!model)return;const{gl,cv}=GL,dpr=window.devicePixelRatio||1,cw=Math.max(200,Math.round($('stage').clientWidth*dpr)),ch=Math.round(cw*3/4);
+  if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch}
+  const S=pieces||model,e=S.extent,R=Math.hypot(e[0],e[1],e[2])/2*(pieces?1.25:1),sc=Math.min(cw,ch)/2/R*1.15;
+  const useZ=!pieces&&cuts.length&&size;glData(S);glColors(S,false);
+  const T=[Math.cos(VW.yaw),Math.sin(VW.yaw),Math.cos(VW.el),Math.sin(VW.el)];
+  gl.viewport(0,0,cw,ch);gl.clearColor(0,0,0,0);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.disable(gl.BLEND);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const setup=(P,bufs)=>{gl.useProgram(P.p);gl.uniform4f(P.u.uT,T[0],T[1],T[2],T[3]);gl.uniform2f(P.u.uSc,sc/(cw/2),sc/(ch/2));gl.uniform1f(P.u.uInvR,1/R);
+    bufs.forEach((b,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,0,0)})};
+  setup(GL.m,GL.bufs);gl.uniform1f(GL.m.u.uEx,pieces?(+$('explode').value/100)*0.8:0);
+  {const nc=useZ?Math.min(cuts.length,8):0,ca=new Float32Array(32);for(let i=0;i<nc;i++){const a=AXN[cuts[i].axis];ca[i*4+a]=1;ca[i*4+3]=cuts[i].pos-size[a]/2}gl.uniform1f(GL.m.u.uZn,nc);gl.uniform4fv(GL.m.u.uCut,ca)}
+  gl.drawArrays(gl.TRIANGLES,0,S.n*3);
+  if(!pieces&&size&&cuts.length){   // plans de coupe : quadrilatères translucides + contour
+    const P=[],L=[];cuts.forEach(c=>{const a=AXN[c.axis],ot=[0,1,2].filter(k=>k!==a),v=c.pos-size[a]/2,h=[e[0]/2,e[1]/2,e[2]/2].map(x=>x*1.08);
+      const q=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([u,w])=>{const p=[0,0,0];p[a]=v;p[ot[0]]=u*h[ot[0]];p[ot[1]]=w*h[ot[1]];return p});
+      [0,1,2,0,2,3].forEach(i=>P.push(...q[i]));q.forEach(p=>L.push(...p))});
+    const z=new Float32Array(Math.max(P.length,L.length)),col=(n,r,g,b)=>{const a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=r;a[i*3+1]=g;a[i*3+2]=b}return a};
+    const up=(i,a)=>{gl.bindBuffer(gl.ARRAY_BUFFER,GL.pb[i]);gl.bufferData(gl.ARRAY_BUFFER,a,gl.STREAM_DRAW)};
+    gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    const nq=P.length/3;up(0,new Float32Array(P));up(1,z.subarray(0,P.length));up(2,z.subarray(0,P.length));up(3,col(nq,0.31,0.63,0.83));
+    setup(GL.pl,GL.pb);gl.uniform1f(GL.pl.u.uEx,0);gl.uniform1f(GL.pl.u.uA,0.28);gl.drawArrays(gl.TRIANGLES,0,nq);
+    cuts.forEach((c,i)=>{up(0,new Float32Array(L.slice(i*12,i*12+12)));up(1,z.subarray(0,12));up(2,z.subarray(0,12));up(3,col(4,0.31,0.63,0.83));
+      setup(GL.pl,GL.pb);gl.uniform1f(GL.pl.u.uEx,0);gl.uniform1f(GL.pl.u.uA,0.95);gl.drawArrays(gl.LINE_LOOP,0,4)})}
+}
+(()=>{const cv=$('stage');let drag=null;cv.onpointerdown=ev=>{drag=[ev.clientX,ev.clientY];cv.setPointerCapture(ev.pointerId);cv.style.cursor='grabbing'};
+  cv.onpointermove=ev=>{if(!drag)return;VW.yaw+=(ev.clientX-drag[0])*0.012;VW.el=Math.max(-1.4,Math.min(1.4,VW.el+(ev.clientY-drag[1])*0.01));drag=[ev.clientX,ev.clientY];draw()};
+  cv.onpointerup=cv.onpointercancel=()=>{drag=null;cv.style.cursor='grab'};cv.style.cursor='grab';$('explode').oninput=draw})();
+
+let cur='',curSid='';   // dossier choisi : source + sous-dossier relatif
+function hereTxt(){const o=$('src').selectedOptions[0];return curSid?t('here')+(o?o.dataset.label:'')+(cur?' / '+cur.split('/').join(' / '):''):t('here')+t('same')}
+const opened=new Set();
+function addOpt(sid,sub,label,depth,after,path){const o=document.createElement('option');o.value=sid+'|'+sub;o.dataset.sid=sid;o.dataset.sub=sub;o.dataset.label=label;
+  const full=(path||after.dataset.path||'')+(depth&&sub?'/'+sub.split('/').pop():'');o.dataset.path=depth?full:(path||'');
+  o.textContent=(depth?'\uD83D\uDCC2 '+label+' / '+sub.split('/').join(' / '):'\uD83D\uDCC1 '+label)+(o.dataset.path?' ('+o.dataset.path+')':'');after.after(o);return o}
+async function expand(opt){const sid=opt.dataset.sid,sub=opt.dataset.sub,key=sid+'|'+sub;if(!sid||opened.has(key))return;opened.add(key);
+  try{const d=await window.stellio.api('/api/x/mesh-cut/folders?source_id='+encodeURIComponent(sid)+'&sub='+encodeURIComponent(sub));
+    const depth=sub?sub.split('/').length:0;let prev=opt;
+    (d.folders||[]).forEach(f=>{prev=addOpt(sid,(sub?sub+'/':'')+f,opt.dataset.label,depth+1,prev,opt.dataset.path)})}catch(e){opened.delete(key)}}
+async function pickDest(){const o=$('src').selectedOptions[0];
+  if(!o||!o.dataset.sid){cur='';curSid='';$('here').textContent=hereTxt();return}
+  curSid=o.dataset.sid;cur=o.dataset.sub||'';$('here').textContent=hereTxt();await expand(o)}
+async function createIn(name){
+  const d=await window.stellio.api('/api/x/mesh-cut/mkdir','json',{method:'POST',body:{source_id:curSid,sub:cur,name}});
+  const o=$('src').selectedOptions[0];await expand(o);
+  let n=[...$('src').options].find(x=>x.value===curSid+'|'+d.sub);
+  if(!n){let prev=o,i=$('src').selectedIndex+1;const dp=cur?cur.split('/').length:0;const pre=cur?cur+'/':'';
+    while($('src').options[i]&&$('src').options[i].dataset.sid===curSid&&$('src').options[i].dataset.sub.startsWith(pre)&&$('src').options[i].dataset.sub!==cur){prev=$('src').options[i];i++}
+    n=addOpt(curSid,d.sub,o.dataset.label,dp+1,prev,o.dataset.path)}
+  $('src').value=n.value;await pickDest();
+}
+async function selectPath(sid,sub){
+  let o=[...$('src').options].find(x=>x.value===sid+'|');if(!o)return false;
+  await expand(o);const parts=sub?sub.split('/'):[];let acc='';
+  for(const p of parts){acc=acc?acc+'/'+p:p;const n=[...$('src').options].find(x=>x.value===sid+'|'+acc);if(!n)break;o=n;await expand(o)}
+  $('src').value=o.value;await pickDest();return true}
+async function browse(){
+  try{const d=await window.stellio.api('/api/x/mesh-cut/browse','json',{method:'POST',body:{}});
+    if(!(await selectPath(String(d.source_id),d.sub||'')))msg(t('outside'),'err');else msg('')}
+  catch(e){const m=String(e&&e.message||'');if(/annul|cancel/i.test(m))return false;
+    msg(/n'est dans aucune|aucune de tes sources|outside/i.test(m)?t('outside'):m,'err');return false}
+  return true}
+const ICO_PLUS='<svg viewBox="0 0 512 512" width="18" height="18" fill="currentColor"><path d="M512 416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96c0-35.3 28.7-64 64-64h128c20.1 0 39.1 9.5 51.2 25.6l19.2 25.6c6 8.1 15.5 12.8 25.6 12.8h160c35.3 0 64 28.7 64 64v256zM232 376c0 13.3 10.7 24 24 24s24-10.7 24-24v-64h64c13.3 0 24-10.7 24-24s-10.7-24-24-24h-64v-64c0-13.3-10.7-24-24-24s-24 10.7-24 24v64h-64c-13.3 0-24 10.7-24 24s10.7 24 24 24h64v64z"/></svg>';
+const ICO_OPEN='<svg viewBox="0 0 576 512" width="18" height="18" fill="currentColor"><path d="M88.7 223.8L0 375.8V96C0 60.7 28.7 32 64 32H181.5c17 0 33.3 6.7 45.3 18.7l26.5 26.5c12 12 28.3 18.7 45.3 18.7H416c35.3 0 64 28.7 64 64v32H144c-22.8 0-43.8 12.1-55.3 31.8zm27.6 16.1C122.1 230 132.6 224 144 224H544c11.5 0 22 6.1 27.7 16.1s5.7 22.2-.1 32.1l-112 192C453.9 474 443.4 480 432 480H32c-11.5 0-22-6.1-27.7-16.1s-5.7-22.2 .1-32.1l112-192z"/></svg>';
+async function openMk(){
+  if(!curSid)await browse();                                                        // comme pour les téléchargements : sans dossier choisi, l'explorateur s'ouvre
+  if(!curSid&&$('src').options.length>1){$('src').selectedIndex=1;await pickDest()}   // explorateur indisponible : première source
+  if(!curSid)return;
+  const ov=document.createElement('div');ov.className='mo';const md=document.createElement('div');md.className='md';ov.appendChild(md);
+  const h=document.createElement('h3');h.innerHTML='<span class="mi">'+ICO_PLUS+'</span>';const ht=document.createElement('span');ht.textContent=t('mkopen');h.appendChild(ht);md.appendChild(h);
+  const p=document.createElement('p');p.textContent=t('mkenter');md.appendChild(p);
+  const err=document.createElement('p');err.style.cssText='color:var(--st-danger,#ef4444);margin:-8px 0 12px;display:none';md.appendChild(err);
+  const inp=document.createElement('input');inp.maxLength=50;inp.placeholder=t('mkph');md.appendChild(inp);
+  const bt=document.createElement('div');bt.className='bt';const c=document.createElement('button');c.type='button';c.textContent=t('cancel');
+  const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=t('create');bt.appendChild(c);bt.appendChild(ok);md.appendChild(bt);
+  const close=()=>ov.remove();c.onclick=close;ov.onclick=e=>{if(e.target===ov)close()};
+  const go=async()=>{const name=inp.value.trim();if(!name){inp.style.borderColor='var(--st-danger,#ef4444)';return}
+    ok.disabled=true;try{await createIn(name);close()}catch(e){err.textContent=e.message;err.style.display='block';ok.disabled=false}};
+  ok.onclick=go;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}else if(e.key==='Escape')close()};
+  document.body.appendChild(ov);setTimeout(()=>inp.focus(),50);
+}
+
+function body(extra){return Object.assign({path:sel&&sel.path,cuts:cuts.map(c=>({axis:c.axis,pos:c.pos})),bed_width:+$('bw').value||220,bed_depth:+$('bd').value||220,bed_height:+$('bh').value||250,
+  joint:$('joint').value,shape:$('shape').value,conn_size:+$('csize').value||8,conn_length:+$('clen').value||8,conn_clearance:$('cclr').value===''?0.2:+$('cclr').value,magnet_depth:+$('md').value||3,
+  guide:$('guide').checked,lang:L,filename:$('name').value.trim(),source_id:curSid,target_subfolder:curSid?cur:''},extra||{})}
+let JOB=null,JOBX=false;
+const CXL={fr:['Annuler','Annulé.'],en:['Cancel','Cancelled.'],de:['Abbrechen','Abgebrochen.'],es:['Cancelar','Cancelado.'],it:['Annulla','Annullato.'],pt:['Cancelar','Cancelado.'],zh:['取消','已取消。'],ja:['キャンセル','キャンセルしました。']};
+function cxl(i){return(CXL[L]||CXL.en)[i]}
+function cxlBtn(on){document.querySelectorAll('.cxl').forEach(b=>b.remove());if(!on)return;
+  const a=['run','r_run'].map(id=>document.getElementById(id)).find(e=>e&&e.offsetParent);if(!a)return;
+  const b=document.createElement('button');b.type='button';b.className='cxl';b.textContent=cxl(0);
+  b.onclick=()=>{if(!JOB)return;JOBX=true;b.disabled=true;window.stellio.api('/api/jobs/'+encodeURIComponent(JOB)+'/cancel','json',{method:'POST'}).catch(()=>{})};
+  a.insertAdjacentElement('afterend',b)}
+async function runJob(path,body){
+  const r=await window.stellio.api(path,'json',{method:'POST',body:Object.assign({async:true},body)});
+  if(!r||!r.job_id)return r;                       // ancienne version de Stellio : réponse directe
+  JOB=r.job_id;JOBX=false;cxlBtn(true);
+  try{for(;;){await new Promise(z=>setTimeout(z,JOBX?150:600));
+    const j=await window.stellio.api('/api/jobs/'+encodeURIComponent(r.job_id));
+    if(j.state==='done'){const R=j.result||{};if(R.status>=400)throw new Error((R.body&&R.body.error)||'Erreur');return R.body}
+    if(j.state==='cancelled'||JOBX)throw new Error(cxl(1));
+    if(j.state==='failed')throw new Error(j.error||j.state)}}
+  finally{JOB=null;cxlBtn(false)}}
+async function call(extra){const b=body(extra);return b.dry_run?window.stellio.api('/api/x/mesh-cut/cut','json',{method:'POST',body:b}):runJob('/api/x/mesh-cut/cut',b)}
+function chips(list){$('pl').innerHTML=list.map(p=>`<span class="chip"><i style="background:${esc(p.hex)}"></i>${p.n} <small>${p.size.join(' × ')}</small></span>`).join('')}
+$('preview').onclick=async()=>{if(!sel)return msg(t('pick'),'err');if(!cuts.length)return msg(t('nocut'),'err');msg(t('busy'),'busy');$('preview').disabled=true;
+  try{const d=await call({dry_run:true});pieces=prep(d.preview);chips(d.pieces);$('exrow').style.display='block';msg('');draw()}
+  catch(e){msg(e.message,'err')}finally{$('preview').disabled=false}};
+$('run').onclick=async()=>{if(!sel)return msg(t('pick'),'err');if(!cuts.length)return msg(t('nocut'),'err');msg(t('busy'),'busy');$('run').disabled=true;
+  try{const d=await call();pieces=prep(d.preview);chips(d.pieces);$('exrow').style.display='block';draw();finished(d)}
+  catch(e){msg(e.message,'err')}finally{$('run').disabled=false}};
+let timer;$('q').oninput=()=>{clearTimeout(timer);timer=setTimeout(search,250)};
+document.addEventListener('stellio-ready',async()=>{L=(window.stellio.lang||'fr').slice(0,2);if(!T[L])L='en';labels();
+  try{sources=await window.stellio.api('/api/sources')}catch(e){sources=[]}
+  $('src').innerHTML=`<option value="">${esc(t('selfold'))}</option>`;let prev=$('src').options[0];sources.filter(s=>!s.type||['folder','smb','nfs'].includes(s.type)).forEach(s=>{prev=addOpt(String(s.id),'',s.name||s.path,0,prev,String(s.path||''))});$('here').textContent=hereTxt();search()
+  $('src').onchange=pickDest;$('mkopen').onclick=openMk;$('browse').onclick=browse;});
+labels();
+</script>

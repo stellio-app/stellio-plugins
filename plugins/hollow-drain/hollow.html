@@ -1,0 +1,317 @@
+<style>
+html,body{background:transparent}
+body{margin:0;padding:16px;color:var(--st-text,#eee);font:14px/1.5 system-ui,sans-serif}
+h1{font-size:18px;margin:0 0 4px}
+p.sub{margin:0 0 14px;color:var(--st-muted,#999)}
+.oc{margin-top:16px;padding-top:12px;border-top:1px solid var(--st-border,#333)}.oc .btns{margin-top:10px}.oc .row>div{min-width:120px}
+.card{background:var(--st-card,#1b1b1b);border:1px solid var(--st-border,#333);border-radius:8px;padding:14px;margin-bottom:12px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:inherit;margin:10px 0 0}label.chk input{width:auto}
+label{display:block;font-size:12px;color:var(--st-muted,#999);margin:8px 0 3px}
+input,select{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:140px}
+button{padding:8px 14px;border-radius:6px;border:1px solid var(--st-border,#333);background:var(--st-panel,#161616);color:inherit;font:inherit;cursor:pointer}
+button.primary{background:var(--st-accent,#4ea1d3);border-color:transparent;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.files{max-height:380px;overflow:auto;margin-top:8px;padding:8px;border:1px solid var(--st-border,#333);border-radius:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.files .f{cursor:pointer;border:1px solid var(--st-border,#333);border-radius:8px;overflow:hidden;background:var(--st-panel,#161616);display:flex;flex-direction:column}
+.files .f.sel{outline:2px solid var(--st-accent,#4ea1d3);background:color-mix(in srgb,var(--st-accent,#4ea1d3) 22%,transparent)}
+.files .th{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.12);font-size:26px;opacity:1}
+.files .th img{width:100%;height:100%;object-fit:contain;display:block}
+.files .nm{padding:5px 7px;font-size:12px;line-height:1.25;word-break:break-all;max-height:3.9em;overflow:hidden}
+.files .none{grid-column:1/-1;padding:6px}
+#dest{display:none;flex:2 1 320px}
+.crumb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:2px 0 6px;font-size:13px}
+.crumb button{padding:2px 8px;font-size:12px}
+.dirs{max-height:170px;overflow:auto;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.dirs div{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--st-border,#333);display:flex;gap:8px;align-items:center}
+.dirs div:last-child{border-bottom:0}.dirs div:hover{background:color-mix(in srgb,var(--st-accent,#4ea1d3) 16%,transparent)}
+.dirs .none{cursor:default;opacity:.7}.dirs .none:hover{background:none}
+.srcrow{display:flex;gap:8px;align-items:center}.srcrow select{flex:1 1 0;width:auto;min-width:0}.srcrow .dsel{margin-top:0;flex:none}
+.dsel{display:flex;gap:8px;align-items:center;margin-top:8px}.dsel button{background:transparent;border-color:transparent;padding:6px 12px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.dsel button:hover{background:color-mix(in srgb,var(--st-text,#eee) 8%,transparent)}.dsel #mkopen{flex:1}.mi{display:inline-flex;color:var(--st-accent,#4ea1d3)}.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:50}.mo .md{background:var(--st-panel,#1e2129);border:1px solid var(--st-border,#2a2f3a);border-radius:16px;padding:28px;max-width:450px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.6)}.mo h3{margin:0 0 14px;font-size:18px;display:flex;gap:12px;align-items:center}.mo h3 .mi svg{width:24px;height:24px}.mo p{margin:0 0 14px;opacity:.75;line-height:1.5}.mo input{padding:12px 16px;border:2px solid var(--st-border,#2a2f3a);border-radius:10px;margin-bottom:20px;background:var(--st-bg,#161a22)}.mo input:focus{outline:none;border-color:var(--st-accent,#4ea1d3);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-accent,#4ea1d3) 35%,transparent)}.mo .bt button:not(.primary){background:var(--st-hover,#2a2f3a)}.mo .bt{display:flex;gap:12px;justify-content:flex-end}.mo .bt button{padding:11px 24px;border-radius:10px;border:none}.mo .bt .primary{font-weight:600}.mk{display:flex;gap:8px;margin-top:8px}.mk input{flex:1}
+.here{margin-top:6px;font-size:12px;opacity:.85}
+.dots{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:dotb 1.2s infinite ease-in-out both}.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}@keyframes dotb{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
+#view{display:none;margin-top:14px}
+#view .hint{font-size:12px;opacity:.7;margin-bottom:8px}
+#view .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+#view .card{border:1px solid var(--st-border,#333);border-radius:8px;background:var(--st-panel,#161616);overflow:hidden}
+#view canvas{width:100%;height:auto;aspect-ratio:1;display:block;cursor:grab;touch-action:none}
+#view .cap{padding:5px 8px;font-size:12px;display:flex;gap:6px;align-items:center;border-top:1px solid var(--st-border,#333)}
+#view .cap i{width:12px;height:12px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#big{display:none;margin-top:10px;gap:12px;align-items:center}
+#big button{flex:none}
+#big img{width:96px;height:96px;object-fit:contain;border-radius:8px;border:1px solid var(--st-border,#333);background:rgba(127,127,127,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--st-border,#333);border-radius:6px;background:var(--st-panel,#161616)}
+.chip i{width:14px;height:14px;border-radius:3px;border:1px solid var(--st-border,#333);display:inline-block}
+#msg{margin-top:10px;padding:9px 11px;border-radius:6px;border:1px solid var(--st-border,#333);display:none}
+#msg.finished{display:flex!important;align-items:center;gap:14px;padding:16px 18px;border:2px solid var(--st-success,#30a46c);background:color-mix(in srgb,var(--st-success,#30a46c) 14%,transparent);animation:pop .45s ease-out}#msg.finished .tick{flex:none;width:38px;height:38px;border-radius:50%;background:var(--st-success,#30a46c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}#msg.finished b{display:block;font-size:15px}#msg.finished small{opacity:.8}@keyframes pop{0%{transform:scale(.96);opacity:0}60%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+#msg.err{border-color:var(--st-danger,#e5484d)}#msg.ok{border-color:var(--st-success,#30a46c)}
+.cuts .cut{display:flex;gap:8px;align-items:center;margin:6px 0}.cuts .cut select{width:72px;flex:none}.cuts .cut input[type=range]{flex:1;padding:0}.cuts .cut input[type=number]{width:84px;flex:none}
+.cuts .cut button{padding:4px 10px}.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.work{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);gap:16px;align-items:start}.wl{position:sticky;top:8px}@media(max-width:900px){.work{grid-template-columns:1fr}.wl{position:static}}
+#stage{position:relative;max-width:calc((100vh - 340px)*4/3);margin:0 auto}#stage canvas{width:100%;height:auto;aspect-ratio:4/3;display:block;border:1px solid var(--st-border,#333);border-radius:8px;background:rgba(127,127,127,.08);cursor:grab;touch-action:none}
+.pl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pl .chip small{opacity:.7}
+.hint{font-size:12px;opacity:.7}.seg{display:flex;gap:8px;flex-wrap:wrap}.seg>div{flex:1;min-width:140px}
+h2{font-size:14px;margin:0 0 6px}
+</style>
+<h1 id="t_title"></h1>
+<p class="sub" id="t_intro"></p>
+<div class="card">
+  <div id="pick">
+    <label id="t_search"></label>
+    <input id="q" type="search" autocomplete="off">
+    <div class="files" id="files"></div>
+  </div>
+</div>
+<div class="card work" id="work" style="display:none">
+  <div class="wl">
+    <div id="stage"><canvas id="cvg" width="800" height="600"></canvas><div id="nogl" class="hint" style="display:none"></div></div>
+    <div class="seg" style="margin-top:8px;align-items:end">
+      <div style="flex:0 0 auto;min-width:0"><label class="chk" style="margin:0"><input type="checkbox" id="clip" checked><span id="t_clip"></span></label></div>
+      <div style="flex:0 0 90px;min-width:90px"><select id="caxis"><option value="0">X</option><option value="1" selected>Y</option><option value="2">Z</option></select></div>
+      <div style="flex:2 1 160px"><input id="cpos" type="range" min="0" max="100" value="50"></div>
+    </div>
+    <div class="chips" id="stats"></div>
+    <div class="hint" id="legend" style="margin-top:6px"></div>
+  </div>
+  <div class="wr">
+    <div class="hint" id="t_dims"></div>
+    <h2 id="t_wallh" style="margin-top:10px"></h2>
+    <div class="seg">
+      <div><label id="t_wall"></label><input id="wall" type="number" min="0.6" max="20" step="0.1" value="2"></div>
+      <div><label id="t_quality"></label><select id="quality"><option value="1"></option><option value="2" selected></option><option value="3"></option></select></div>
+      <div><label id="t_pocket"></label><input id="pocket" type="number" min="0" max="100000" step="5" value="20"></div>
+    </div>
+    <div class="hint" id="t_wallhint" style="margin-top:6px"></div>
+    <h2 id="t_holesh" style="margin-top:16px"></h2>
+    <label class="chk"><input type="checkbox" id="holes" checked><span id="t_holes"></span></label>
+    <div id="holebox">
+      <div class="seg">
+        <div><label id="t_diam"></label><input id="diam" type="number" min="1.5" max="15" step="0.5" value="3.5"></div>
+        <div><label id="t_side"></label><select id="side"><option value="bottom"></option><option value="top"></option></select></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="vent" checked><span id="t_vent"></span></label>
+      <label class="chk"><input type="checkbox" id="plugs"><span id="t_plugs"></span></label>
+      <div id="clrbox" style="display:none"><div class="seg"><div><label id="t_clr"></label><input id="clr" type="number" min="0" max="1" step="0.05" value="0.2"></div></div></div>
+    </div>
+    <div class="btns"><button type="button" id="preview"></button></div>
+<div id="outcard" class="oc" style="display:none">
+  <div class="row"><div><label id="t_name"></label><input id="name" maxlength="120"></div>
+    <div><label id="t_fmt"></label><select id="fmt"><option value="3mf">3MF</option><option value="stl">STL</option></select></div></div>
+  <div>
+    <label id="t_src"></label>
+    <div class="srcrow"><select id="src"></select><div class="dsel"><button type="button" id="mkopen"></button><button type="button" id="browse" class="ico"></button></div></div>
+    <div class="hint" id="t_savehint" style="margin-top:6px"></div>
+    <div class="here" id="here"></div>
+  </div>
+  <div class="btns"><button id="run" class="primary" disabled></button><button type="button" id="chg" style="display:none"></button></div>
+  <div id="msg"></div>
+  </div>
+</div>
+</div>
+<script>
+const T={"fr":{"change":"Changer de modèle","title":"Évidement et drainage","intro":"Creuse un modèle 3MF ou STL pour économiser la résine ou le filament, puis perce des trous de drainage et d'évent sur chaque poche. Le fichier d'origine n'est pas modifié.","search":"Rechercher un modèle (3MF / STL) de la bibliothèque","none":"Aucun modèle trouvé.","pick":"Choisissez d'abord un modèle.","busy":"Traitement…","dims":"Dimensions : {x} × {y} × {z} mm — volume {v} cm³","wallh":"Évidement","wall":"Épaisseur de paroi (mm)","quality":"Qualité du calcul","q1":"Brouillon (rapide)","q2":"Normal","q3":"Fin (lent, gros modèles : beaucoup de mémoire)","pocket":"Ignorer les poches plus petites que (mm³)","wallhint":"La paroi n'est jamais plus mince que la valeur demandée. Résine : 1,5 à 2,5 mm ; filament : au moins 2 fois le diamètre de la buse.","holesh":"Drainage","holes":"Percer des trous de drainage","diam":"Diamètre des trous (mm)","side":"Trou de vidange côté","s_bottom":"Bas (point le plus bas de chaque poche)","s_top":"Haut (modèle imprimé à l'envers)","vent":"Ajouter un évent à l'opposé (l'air entre pendant que la résine sort)","plugs":"Créer des bouchons à imprimer","clr":"Jeu des bouchons (mm)","clip":"Vue en coupe","preview":"Calculer l'aperçu","stale":"Paramètres modifiés : relancez l'aperçu.","legend":"Gris : surface · Orange : matière coupée. Faites glisser pour tourner, molette pour zoomer.","nogl":"WebGL est indisponible : l'aperçu 3D ne peut pas s'afficher, mais l'évidement fonctionne.","name":"Nom du nouveau fichier","fmt":"Format","src":"Enregistrer dans (source)","savehint":"Choisis où enregistrer le modèle creux.","run":"Évider et créer le fichier","fin":"Terminé","done":"{f}","st_vol":"Volume {a} → {b} cm³","st_save":"{p} % de matière en moins (≈ {s} ml)","st_pk":"{n} poche(s)","st_ho":"{n} trou(s)","st_pl":"{n} bouchon(s)","nohole":"Aucun trou n'a pu être percé : la poche est fermée (à vidanger autrement).","skip":"{n} trou(s) impossible(s) à placer.","outside":"Ce dossier n'est dans aucune de tes sources : ajoute-le d'abord comme source, ou choisis un dossier de la liste.","mkenter":"Entrez le nom du nouveau dossier","mkph":"Nom du dossier","cancel":"Annuler","create":"Créer","browse":"Parcourir","selfold":"Veuillez sélectionner un dossier.","mkopen":"Créer un dossier...","here":"Enregistrement dans : ","same":"Dossier du fichier d'origine"},"en":{"change":"Change model","title":"Hollow & drain","intro":"Hollows out a 3MF or STL model to save resin or filament, then drills drain and vent holes into every pocket. The original file is never modified.","search":"Search a model (3MF / STL) in the library","none":"No model found.","pick":"Pick a model first.","busy":"Working…","dims":"Size: {x} × {y} × {z} mm — volume {v} cm³","wallh":"Hollowing","wall":"Wall thickness (mm)","quality":"Calculation quality","q1":"Draft (fast)","q2":"Normal","q3":"Fine (slow, big models need lots of memory)","pocket":"Ignore pockets smaller than (mm³)","wallhint":"The wall is never thinner than the requested value. Resin: 1.5 to 2.5 mm; filament: at least 2× the nozzle diameter.","holesh":"Drainage","holes":"Drill drain holes","diam":"Hole diameter (mm)","side":"Drain hole on the","s_bottom":"Bottom (lowest point of each pocket)","s_top":"Top (model printed upside down)","vent":"Add a vent hole on the opposite side (air comes in while resin flows out)","plugs":"Create printable plugs","clr":"Plug clearance (mm)","clip":"Cutaway view","preview":"Compute preview","stale":"Settings changed: run the preview again.","legend":"Grey: surface · Orange: cut material. Drag to rotate, wheel to zoom.","nogl":"WebGL is unavailable: the 3D preview cannot be shown, but hollowing still works.","name":"New file name","fmt":"Format","src":"Save to (source)","savehint":"Choose where to save the hollowed model.","run":"Hollow out and create the file","fin":"Done","done":"{f}","st_vol":"Volume {a} → {b} cm³","st_save":"{p}% less material (≈ {s} ml)","st_pk":"{n} pocket(s)","st_ho":"{n} hole(s)","st_pl":"{n} plug(s)","nohole":"No hole could be drilled: the pocket is sealed (it must be emptied another way).","skip":"{n} hole(s) could not be placed.","outside":"This folder is not in any of your sources: add it as a source first, or pick a folder from the list.","mkenter":"Enter the new folder name","mkph":"Folder name","cancel":"Cancel","create":"Create","browse":"Browse","selfold":"Please select a folder.","mkopen":"Create a folder...","here":"Saving to: ","same":"Folder of the original file"}};
+let L='fr',sel=null,sources=[],info=null,shown=null,dirtyP=true;
+const $=id=>document.getElementById(id),t=k=>(T[L]||T.en)[k]||T.en[k]||k;
+function esc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const f1=x=>Number(x).toLocaleString(L==='fr'?'fr-FR':'en-US',{maximumFractionDigits:1,minimumFractionDigits:0});
+function labels(){
+  const m={t_title:'title',t_intro:'intro',t_search:'search',t_wallh:'wallh',t_wall:'wall',t_quality:'quality',t_pocket:'pocket',t_wallhint:'wallhint',t_holesh:'holesh',t_holes:'holes',t_diam:'diam',t_side:'side',t_vent:'vent',t_plugs:'plugs',t_clr:'clr',t_clip:'clip',t_name:'name',t_fmt:'fmt',t_src:'src',legend:'legend'};
+  for(const k in m)$(k).textContent=t(m[k]);
+  $('preview').textContent=t('preview');$('run').textContent=t('run');$('nogl').textContent=t('nogl');
+  const o=(id,keys)=>[...$(id).options].forEach((op,i)=>op.textContent=t(keys[i]));
+  o('quality',['q1','q2','q3']);o('side',['s_bottom','s_top']);
+  $('mkopen').innerHTML='<span class="mi">'+ICO_PLUS+'</span> ';$('mkopen').appendChild(document.createTextNode(t('mkopen')));$('browse').innerHTML=ICO_OPEN;$('browse').title=t('browse');$('t_savehint').textContent=t('savehint');
+  showDims()}
+function msg(txt,cls){const m=$('msg');m.textContent=cls==='busy'?String(txt).replace(/[….]+$/,''):txt;m.className=cls||'';if(cls==='busy'){const d=document.createElement('span');d.className='dots';d.innerHTML='<i></i><i></i><i></i>';m.appendChild(d)}m.style.display=txt?'block':'none'}
+function finished(d){const m=$('msg');m.className='finished';m.innerHTML='';
+  const k=document.createElement('div');k.className='tick';k.textContent='✓';const w=document.createElement('div');
+  const b=document.createElement('b');b.textContent=t('fin')+' — '+t('done').replace('{f}',d.output_filename);w.appendChild(b);
+  const s=d.stats,parts=[t('st_vol').replace('{a}',f1(s.volume_before)).replace('{b}',f1(s.volume_after)),t('st_save').replace('{p}',f1(s.saved_pct)).replace('{s}',f1(s.saved*1))];
+  if(d.plugs_file)parts.push(d.plugs_file);
+  const sm=document.createElement('small');sm.style.display='block';sm.textContent=parts.join(' · ');w.appendChild(sm);
+  m.appendChild(k);m.appendChild(w);m.style.display='flex';try{m.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}}
+const thumbs=new Map();
+function mime(b){const u=new Uint8Array(b);if(u[0]===0x89&&u[1]===0x50)return'image/png';if(u[0]===0xff&&u[1]===0xd8)return'image/jpeg';return'image/webp'}
+let thN=0;const thQ=[];   // au plus 3 miniatures demandées en même temps : l'application reste fluide
+function thNext(){while(thN<3&&thQ.length){const j=thQ.shift();thN++;j().finally(()=>{thN--;thNext()})}}
+function thumbUrl(path){
+  if(!thumbs.has(path))thumbs.set(path,new Promise(ok=>{thQ.push(()=>window.stellio.api('/api/thumb?path='+encodeURIComponent(path),'arraybuffer')
+    .then(b=>ok(URL.createObjectURL(new Blob([b],{type:mime(b)})))).catch(()=>ok(null)));thNext()}));
+  return thumbs.get(path);
+}
+function fill(el,path){thumbUrl(path).then(u=>{if(u){el.innerHTML='';const i=new Image();i.alt='';i.src=u;el.appendChild(i)}})}
+let io=null;
+function lazy(el,path){
+  if(!('IntersectionObserver' in window))return fill(el,path);
+  if(!io)io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);fill(e.target,e.target.dataset.p)}}),{root:$('files'),rootMargin:'120px'});
+  el.dataset.p=path;io.observe(el);
+}
+function collapse(on){const c=$('pick').closest('.card');c.style.display=on?'none':'';if(!on){try{c.scrollIntoView({block:'nearest'})}catch(e){}}}
+$('chg').onclick=()=>collapse(false);
+function showBig(){const b=$('chg');b.style.display=sel?'':'none';b.textContent=t('change')}
+
+async function search(){
+  try{const d=await window.stellio.api('/api/x/hollow-drain/files?q='+encodeURIComponent($('q').value.trim()));
+    const box=$('files');if(io)io.disconnect();
+    box.innerHTML=(d.files||[]).map((f,i)=>`<div class="f${sel&&sel.path===f.path?' sel':''}" data-i="${i}" title="${esc(f.path)}"><div class="th"><i>&#9638;</i></div><div class="nm">${esc(f.name)}</div></div>`).join('')||`<div class="none">${esc(t('none'))}</div>`;
+    box.querySelectorAll('.f').forEach(el=>{const f=d.files[+el.dataset.i];lazy(el.querySelector('.th'),f.path);
+      el.onclick=()=>{box.querySelectorAll('.f').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');choose(f)}});
+  }catch(e){msg(e.message,'err')}
+}
+async function choose(f){
+  sel=f;showBig();collapse(true);info=null;shown=null;$('stats').innerHTML='';$('run').disabled=true;msg('');
+  $('name').value=f.name.replace(/\.(3mf|stl)$/i,'')+'_creux';
+  $('work').style.display='';$('outcard').style.display='block';
+  msg(t('busy'),'busy');
+  try{const d=await window.stellio.api('/api/x/hollow-drain/model','json',{method:'POST',body:{path:f.path}});
+    if(sel!==f)return;info=d;showDims();msg('');setMesh(d.preview);$('run').disabled=false;dirtyP=true}
+  catch(e){msg(e.message,'err')}
+}
+function showDims(){$('t_dims').textContent=info?t('dims').replace('{x}',f1(info.size[0])).replace('{y}',f1(info.size[1])).replace('{z}',f1(info.size[2])).replace('{v}',f1(info.volume)):''}
+function showBig(){const b=$('chg');b.style.display=sel?'':'none';b.textContent=t('change')}
+function stale(){dirtyP=true;if(shown&&!$('msg').className.includes('err'))msg(t('stale'),'')}
+['wall','quality','pocket','holes','diam','side','vent','plugs','clr'].forEach(i=>$(i).addEventListener('input',stale));
+$('holes').addEventListener('change',()=>{$('holebox').style.display=$('holes').checked?'':'none'});
+$('plugs').addEventListener('change',()=>{$('clrbox').style.display=$('plugs').checked?'':'none'});
+
+/* ── rendu 3D WebGL : coupe par plan (faces arrière = matière coupée, en orange) ── */
+const VW={yaw:-0.6,el:0.62,zoom:1};
+const VS=`attribute vec3 aPos;attribute vec3 aNrm;uniform vec4 uT;uniform vec2 uSc;uniform float uInvR;varying vec3 vP;varying float vK;
+void main(){vec3 p=aPos;float x1=p.x*uT.x-p.y*uT.y;float y1=p.x*uT.y+p.y*uT.x;
+gl_Position=vec4(x1*uSc.x,(p.z*uT.z+y1*uT.w)*uSc.y,(y1*uT.z-p.z*uT.w)*uInvR*0.9,1.0);
+float nx=aNrm.x*uT.x-aNrm.y*uT.y;float ny=aNrm.x*uT.y+aNrm.y*uT.x;float vy=aNrm.z*uT.z+ny*uT.w;float vz=ny*uT.z-aNrm.z*uT.w;
+vK=0.38+0.62*abs(-0.3*nx+0.45*vy+0.55*vz);vP=aPos;}`;
+const FS=`precision mediump float;varying vec3 vP;varying float vK;uniform vec3 uAx;uniform float uPos;uniform float uSg;uniform float uOn;
+void main(){if(uOn>0.5&&uSg*(dot(vP,uAx)-uPos)<0.0)discard;
+vec3 c=gl_FrontFacing?vec3(0.66,0.70,0.76)*vK:vec3(0.95,0.55,0.18);gl_FragColor=vec4(c,1.0);}`;
+let GL=null,MESH=null;
+function b64(s,Cls){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Cls(u.buffer)}
+function setMesh(pv){
+  const P=b64(pv.pos,Float32Array),I=b64(pv.idx,Uint32Array),n=I.length,pos=new Float32Array(n*3),nrm=new Float32Array(n*3);
+  for(let i=0;i<n;i+=3){for(let k=0;k<3;k++){const v=I[i+k]*3;pos[(i+k)*3]=P[v];pos[(i+k)*3+1]=P[v+1];pos[(i+k)*3+2]=P[v+2]}
+    const o=i*3,ux=pos[o+3]-pos[o],uy=pos[o+4]-pos[o+1],uz=pos[o+5]-pos[o+2],vx=pos[o+6]-pos[o],vy=pos[o+7]-pos[o+1],vz=pos[o+8]-pos[o+2];
+    let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
+    for(let k=0;k<3;k++){nrm[o+k*3]=nx;nrm[o+k*3+1]=ny;nrm[o+k*3+2]=nz}}
+  MESH={pos,nrm,n,ext:pv.extent,gl:null};syncClip();draw()}
+function syncClip(){if(!MESH)return;const a=+$('caxis').value,h=MESH.ext[a]/2,s=$('cpos');s.min=-h;s.max=h;s.step=Math.max(h/200,0.01);if(MESH.cl!==a){s.value=0;MESH.cl=a}}
+function glInit(){
+  if(GL!==null)return!!GL;
+  try{const cv=$('cvg'),gl=cv.getContext('webgl',{antialias:true,alpha:true});if(!gl)throw 0;
+    const sh=(ty,s)=>{const o=gl.createShader(ty);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+    const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));
+    gl.bindAttribLocation(p,0,'aPos');gl.bindAttribLocation(p,1,'aNrm');gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('link');
+    const u={};['uT','uSc','uInvR','uAx','uPos','uSg','uOn'].forEach(n=>u[n]=gl.getUniformLocation(p,n));
+    GL={gl,cv,p,u,b:[gl.createBuffer(),gl.createBuffer()]};
+    if(window.ResizeObserver)new ResizeObserver(()=>draw()).observe($('stage'));return true}
+  catch(e){GL=false;$('cvg').style.display='none';$('nogl').style.display='block';return false}}
+let raf=0;function draw(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})}
+function render(){
+  if(!MESH||!glInit())return;const{gl,cv,u}=GL,dpr=window.devicePixelRatio||1,cw=Math.max(200,Math.round($('stage').clientWidth*dpr)),ch=Math.round(cw*3/4);
+  if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch}
+  if(!MESH.gl){gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[0]);gl.bufferData(gl.ARRAY_BUFFER,MESH.pos,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[1]);gl.bufferData(gl.ARRAY_BUFFER,MESH.nrm,gl.STATIC_DRAW);MESH.gl=true}
+  const e=MESH.ext,R=Math.hypot(e[0],e[1],e[2])/2,sc=Math.min(cw,ch)/2/R*1.15*VW.zoom;
+  const T4=[Math.cos(VW.yaw),Math.sin(VW.yaw),Math.cos(VW.el),Math.sin(VW.el)],a=+$('caxis').value,ce=T4[2];
+  const g=[T4[1]*ce,T4[0]*ce,-T4[3]][a],ax=[0,0,0];ax[a]=1;
+  gl.viewport(0,0,cw,ch);gl.clearColor(0,0,0,0);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.disable(gl.CULL_FACE);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(GL.p);gl.uniform4f(u.uT,T4[0],T4[1],T4[2],T4[3]);gl.uniform2f(u.uSc,sc/(cw/2),sc/(ch/2));gl.uniform1f(u.uInvR,1/R);
+  gl.uniform3f(u.uAx,ax[0],ax[1],ax[2]);gl.uniform1f(u.uPos,+$('cpos').value);gl.uniform1f(u.uSg,g>0?1:-1);gl.uniform1f(u.uOn,$('clip').checked?1:0);
+  [0,1].forEach(i=>{gl.bindBuffer(gl.ARRAY_BUFFER,GL.b[i]);gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,0,0)});
+  gl.drawArrays(gl.TRIANGLES,0,MESH.n)}
+(()=>{const cv=$('stage');let drag=null;cv.onpointerdown=ev=>{drag=[ev.clientX,ev.clientY];cv.setPointerCapture(ev.pointerId);cv.style.cursor='grabbing'};
+  cv.onpointermove=ev=>{if(!drag)return;VW.yaw+=(ev.clientX-drag[0])*0.012;VW.el=Math.max(-1.4,Math.min(1.4,VW.el+(ev.clientY-drag[1])*0.01));drag=[ev.clientX,ev.clientY];draw()};
+  cv.onpointerup=cv.onpointercancel=()=>{drag=null;cv.style.cursor='grab'};cv.style.cursor='grab';
+  cv.addEventListener('wheel',ev=>{ev.preventDefault();VW.zoom=Math.max(0.4,Math.min(5,VW.zoom*(ev.deltaY<0?1.1:0.9)));draw()},{passive:false});
+  ['clip','cpos'].forEach(i=>$(i).addEventListener('input',draw));$('caxis').onchange=()=>{syncClip();draw()}})();
+let cur='',curSid='';   // dossier choisi : source + sous-dossier relatif
+function hereTxt(){const o=$('src').selectedOptions[0];return curSid?t('here')+(o?o.dataset.label:'')+(cur?' / '+cur.split('/').join(' / '):''):t('here')+t('same')}
+const opened=new Set();
+function addOpt(sid,sub,label,depth,after,path){const o=document.createElement('option');o.value=sid+'|'+sub;o.dataset.sid=sid;o.dataset.sub=sub;o.dataset.label=label;
+  const full=(path||after.dataset.path||'')+(depth&&sub?'/'+sub.split('/').pop():'');o.dataset.path=depth?full:(path||'');
+  o.textContent=(depth?'\uD83D\uDCC2 '+label+' / '+sub.split('/').join(' / '):'\uD83D\uDCC1 '+label)+(o.dataset.path?' ('+o.dataset.path+')':'');after.after(o);return o}
+async function expand(opt){const sid=opt.dataset.sid,sub=opt.dataset.sub,key=sid+'|'+sub;if(!sid||opened.has(key))return;opened.add(key);
+  try{const d=await window.stellio.api('/api/x/hollow-drain/folders?source_id='+encodeURIComponent(sid)+'&sub='+encodeURIComponent(sub));
+    const depth=sub?sub.split('/').length:0;let prev=opt;
+    (d.folders||[]).forEach(f=>{prev=addOpt(sid,(sub?sub+'/':'')+f,opt.dataset.label,depth+1,prev,opt.dataset.path)})}catch(e){opened.delete(key)}}
+async function pickDest(){const o=$('src').selectedOptions[0];
+  if(!o||!o.dataset.sid){cur='';curSid='';$('here').textContent=hereTxt();return}
+  curSid=o.dataset.sid;cur=o.dataset.sub||'';$('here').textContent=hereTxt();await expand(o)}
+async function createIn(name){
+  const d=await window.stellio.api('/api/x/hollow-drain/mkdir','json',{method:'POST',body:{source_id:curSid,sub:cur,name}});
+  const o=$('src').selectedOptions[0];await expand(o);
+  let n=[...$('src').options].find(x=>x.value===curSid+'|'+d.sub);
+  if(!n){let prev=o,i=$('src').selectedIndex+1;const dp=cur?cur.split('/').length:0;const pre=cur?cur+'/':'';
+    while($('src').options[i]&&$('src').options[i].dataset.sid===curSid&&$('src').options[i].dataset.sub.startsWith(pre)&&$('src').options[i].dataset.sub!==cur){prev=$('src').options[i];i++}
+    n=addOpt(curSid,d.sub,o.dataset.label,dp+1,prev,o.dataset.path)}
+  $('src').value=n.value;await pickDest();
+}
+async function selectPath(sid,sub){
+  let o=[...$('src').options].find(x=>x.value===sid+'|');if(!o)return false;
+  await expand(o);const parts=sub?sub.split('/'):[];let acc='';
+  for(const p of parts){acc=acc?acc+'/'+p:p;const n=[...$('src').options].find(x=>x.value===sid+'|'+acc);if(!n)break;o=n;await expand(o)}
+  $('src').value=o.value;await pickDest();return true}
+async function browse(){
+  try{const d=await window.stellio.api('/api/x/hollow-drain/browse','json',{method:'POST',body:{}});
+    if(!(await selectPath(String(d.source_id),d.sub||'')))msg(t('outside'),'err');else msg('')}
+  catch(e){const m=String(e&&e.message||'');if(/annul|cancel/i.test(m))return false;
+    msg(/n'est dans aucune|aucune de tes sources|outside/i.test(m)?t('outside'):m,'err');return false}
+  return true}
+const ICO_PLUS='<svg viewBox="0 0 512 512" width="18" height="18" fill="currentColor"><path d="M512 416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96c0-35.3 28.7-64 64-64h128c20.1 0 39.1 9.5 51.2 25.6l19.2 25.6c6 8.1 15.5 12.8 25.6 12.8h160c35.3 0 64 28.7 64 64v256zM232 376c0 13.3 10.7 24 24 24s24-10.7 24-24v-64h64c13.3 0 24-10.7 24-24s-10.7-24-24-24h-64v-64c0-13.3-10.7-24-24-24s-24 10.7-24 24v64h-64c-13.3 0-24 10.7-24 24s10.7 24 24 24h64v64z"/></svg>';
+const ICO_OPEN='<svg viewBox="0 0 576 512" width="18" height="18" fill="currentColor"><path d="M88.7 223.8L0 375.8V96C0 60.7 28.7 32 64 32H181.5c17 0 33.3 6.7 45.3 18.7l26.5 26.5c12 12 28.3 18.7 45.3 18.7H416c35.3 0 64 28.7 64 64v32H144c-22.8 0-43.8 12.1-55.3 31.8zm27.6 16.1C122.1 230 132.6 224 144 224H544c11.5 0 22 6.1 27.7 16.1s5.7 22.2-.1 32.1l-112 192C453.9 474 443.4 480 432 480H32c-11.5 0-22-6.1-27.7-16.1s-5.7-22.2 .1-32.1l112-192z"/></svg>';
+async function openMk(){
+  if(!curSid)await browse();                                                        // comme pour les téléchargements : sans dossier choisi, l'explorateur s'ouvre
+  if(!curSid&&$('src').options.length>1){$('src').selectedIndex=1;await pickDest()}   // explorateur indisponible : première source
+  if(!curSid)return;
+  const ov=document.createElement('div');ov.className='mo';const md=document.createElement('div');md.className='md';ov.appendChild(md);
+  const h=document.createElement('h3');h.innerHTML='<span class="mi">'+ICO_PLUS+'</span>';const ht=document.createElement('span');ht.textContent=t('mkopen');h.appendChild(ht);md.appendChild(h);
+  const p=document.createElement('p');p.textContent=t('mkenter');md.appendChild(p);
+  const err=document.createElement('p');err.style.cssText='color:var(--st-danger,#ef4444);margin:-8px 0 12px;display:none';md.appendChild(err);
+  const inp=document.createElement('input');inp.maxLength=50;inp.placeholder=t('mkph');md.appendChild(inp);
+  const bt=document.createElement('div');bt.className='bt';const c=document.createElement('button');c.type='button';c.textContent=t('cancel');
+  const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=t('create');bt.appendChild(c);bt.appendChild(ok);md.appendChild(bt);
+  const close=()=>ov.remove();c.onclick=close;ov.onclick=e=>{if(e.target===ov)close()};
+  const go=async()=>{const name=inp.value.trim();if(!name){inp.style.borderColor='var(--st-danger,#ef4444)';return}
+    ok.disabled=true;try{await createIn(name);close()}catch(e){err.textContent=e.message;err.style.display='block';ok.disabled=false}};
+  ok.onclick=go;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go()}else if(e.key==='Escape')close()};
+  document.body.appendChild(ov);setTimeout(()=>inp.focus(),50);
+}
+
+let JOB=null,JOBX=false;
+const CXL={fr:['Annuler','Annulé.'],en:['Cancel','Cancelled.'],de:['Abbrechen','Abgebrochen.'],es:['Cancelar','Cancelado.'],it:['Annulla','Annullato.'],pt:['Cancelar','Cancelado.'],zh:['取消','已取消。'],ja:['キャンセル','キャンセルしました。']};
+function cxl(i){return(CXL[L]||CXL.en)[i]}
+function cxlBtn(on){document.querySelectorAll('.cxl').forEach(b=>b.remove());if(!on)return;
+  const a=['run','r_run'].map(id=>document.getElementById(id)).find(e=>e&&e.offsetParent);if(!a)return;
+  const b=document.createElement('button');b.type='button';b.className='cxl';b.textContent=cxl(0);
+  b.onclick=()=>{if(!JOB)return;JOBX=true;b.disabled=true;window.stellio.api('/api/jobs/'+encodeURIComponent(JOB)+'/cancel','json',{method:'POST'}).catch(()=>{})};
+  a.insertAdjacentElement('afterend',b)}
+async function runJob(path,body){
+  const r=await window.stellio.api(path,'json',{method:'POST',body:Object.assign({async:true},body)});
+  if(!r||!r.job_id)return r;                       // ancienne version de Stellio : réponse directe
+  JOB=r.job_id;JOBX=false;cxlBtn(true);
+  try{for(;;){await new Promise(z=>setTimeout(z,JOBX?150:600));
+    const j=await window.stellio.api('/api/jobs/'+encodeURIComponent(r.job_id));
+    if(j.state==='done'){const R=j.result||{};if(R.status>=400)throw new Error((R.body&&R.body.error)||'Erreur');return R.body}
+    if(j.state==='cancelled'||JOBX)throw new Error(cxl(1));
+    if(j.state==='failed')throw new Error(j.error||j.state)}}
+  finally{JOB=null;cxlBtn(false)}}
+function body(extra){return Object.assign({path:sel&&sel.path,wall:+$('wall').value||2,quality:+$('quality').value,min_pocket:$('pocket').value===''?20:+$('pocket').value,
+  holes:$('holes').checked,diameter:+$('diam').value||3.5,drain_side:$('side').value,vent:$('vent').checked,plugs:$('plugs').checked,clearance:$('clr').value===''?0.2:+$('clr').value,
+  format:$('fmt').value,filename:$('name').value.trim(),source_id:curSid,target_subfolder:curSid?cur:''},extra||{})}
+function showStats(d){const s=d.stats,c=$('stats');c.innerHTML='';
+  const add=x=>{const e=document.createElement('span');e.className='chip';e.textContent=x;c.appendChild(e)};
+  add(t('st_vol').replace('{a}',f1(s.volume_before)).replace('{b}',f1(s.volume_after)));add(t('st_save').replace('{p}',f1(s.saved_pct)).replace('{s}',f1(s.saved)));
+  add(t('st_pk').replace('{n}',s.pockets));add(t('st_ho').replace('{n}',s.holes));if(d.plug_count)add(t('st_pl').replace('{n}',d.plug_count));
+  if(d.warning==='no_holes')add(t('nohole'));if(s.skipped)add(t('skip').replace('{n}',s.skipped))}
+async function go(dry){
+  if(!sel)return msg(t('pick'),'err');msg(t('busy'),'busy');$('preview').disabled=true;$('run').disabled=true;
+  try{const d=await runJob('/api/x/hollow-drain/run',body({dry_run:dry}));
+    setMesh(d.preview);shown=d;dirtyP=false;showStats(d);if(dry)msg('');else finished(d)}
+  catch(e){msg(e.message,'err')}finally{$('preview').disabled=false;$('run').disabled=false}}
+$('preview').onclick=()=>go(true);$('run').onclick=()=>go(false);
+let timer;$('q').oninput=()=>{clearTimeout(timer);timer=setTimeout(search,250)};
+document.addEventListener('stellio-ready',async()=>{L=(window.stellio.lang||'fr').slice(0,2);if(!T[L])L='en';labels();
+  try{sources=await window.stellio.api('/api/sources')}catch(e){sources=[]}
+  $('src').innerHTML=`<option value="">${esc(t('selfold'))}</option>`;let prev=$('src').options[0];sources.filter(s=>!s.type||['folder','smb','nfs'].includes(s.type)).forEach(s=>{prev=addOpt(String(s.id),'',s.name||s.path,0,prev,String(s.path||''))});$('here').textContent=hereTxt();search()
+  $('src').onchange=pickDest;$('mkopen').onclick=openMk;$('browse').onclick=browse;});
+labels();
+</script>

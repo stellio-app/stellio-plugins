@@ -1,0 +1,32 @@
+{
+  "id": "mesh-cut",
+  "name": "3D cutter",
+  "version": "1.0.1",
+  "api": 1,
+  "author": "Stellio",
+  "description": {
+    "fr": "Découpe un modèle 3MF ou STL en pièces qui tiennent sur le plateau, avec connecteurs et guide d'assemblage PDF.",
+    "en": "Cuts a 3MF or STL model into bed-sized pieces, with connectors and a PDF assembly guide.",
+    "de": "Zerlegt ein 3MF- oder STL-Modell in druckbettgroße Teile mit Verbindern und PDF-Montageanleitung.",
+    "es": "Divide un modelo 3MF o STL en piezas que caben en la cama, con conectores y guía de montaje en PDF.",
+    "pt": "Divide um modelo 3MF ou STL em peças que cabem na mesa, com conectores e guia de montagem em PDF.",
+    "it": "Divide un modello 3MF o STL in pezzi che stanno sul piatto, con connettori e guida di montaggio PDF.",
+    "zh": "将 3MF 或 STL 模型切成适合热床的部件，带连接件和 PDF 装配指南。",
+    "ja": "3MF/STL モデルをベッドに収まる部品に分割し、コネクターと PDF 組立ガイドを付けます。"
+  },
+  "host": {
+    "modules": [
+      "mesh_cut"
+    ]
+  },
+  "permissions": [
+    "ui",
+    "api:read",
+    "api:write"
+  ],
+  "ui": {
+    "title": "3D cutter",
+    "icon": "fa-scissors",
+    "entry": "cut.html"
+  }
+}
